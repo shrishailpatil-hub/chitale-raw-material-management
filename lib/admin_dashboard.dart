@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'inbound_entry_screen.dart';
+import 'shelf_assign_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -144,7 +145,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       pressed: shelfPressed,
                       onPressDown: () => setState(() => shelfPressed = true),
                       onPressUp: () => setState(() => shelfPressed = false),
-                      onTap: () => print("Shelf Assign"),
+                      onTap: () {
+                        Navigator.push(
+
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ShelfAssignScreen(),
+                          ),
+                        );
+                      },
                     ),
 
                     _menuButton(
