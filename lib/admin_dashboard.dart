@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'inbound_entry_screen.dart';
 import 'shelf_assign_screen.dart';
+import 'issue_material_screen.dart';
+
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -162,7 +164,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       pressed: issuePressed,
                       onPressDown: () => setState(() => issuePressed = true),
                       onPressUp: () => setState(() => issuePressed = false),
-                      onTap: () => print("Issue Material"),
+                      onTap: () {
+                        Navigator.push(
+
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const IssueMaterialScreen(),
+                          ),
+                        );
+                      },
                     ),
 
                     _menuButton(
