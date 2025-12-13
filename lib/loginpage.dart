@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'admin_dashboard.dart';
-
+import 'qc_dashboard.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -185,7 +185,7 @@ class _LoginUIState extends State<LoginUI> {
               ),
             ),
 
-            // R&D LOGIN button
+            // QC LOGIN button
             Positioned(
               left: 61,
               top: 717,
@@ -200,7 +200,12 @@ class _LoginUIState extends State<LoginUI> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),
                       onTap: () {
-                        print("R&D LOGIN");
+                        Navigator.push(
+
+                          context,
+                          MaterialPageRoute(builder: (context) => const QCDashboard(),
+                        ),
+                        );
                       },
                       child: Ink(
                         width: 315,
@@ -211,7 +216,7 @@ class _LoginUIState extends State<LoginUI> {
                         ),
                         child: const Center(
                           child: Text(
-                            'R&D LOGIN',
+                            'QC LOGIN',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
