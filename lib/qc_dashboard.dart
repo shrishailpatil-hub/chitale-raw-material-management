@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'pending_qc_screen.dart';
+import 'qc_scan_batch_screen.dart';
 
 class QCDashboard extends StatelessWidget {
   const QCDashboard({super.key});
@@ -89,8 +91,9 @@ class QCDashboard extends StatelessWidget {
                   icon: Icons.qr_code_scanner,
                   label: "Scan Batch",
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Scan Batch - Coming Soon")),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_)=>const QCScanBatchScreen()),
                     );
                   },
                 ),
@@ -99,8 +102,10 @@ class QCDashboard extends StatelessWidget {
                   icon: Icons.pending_actions,
                   label: "Pending QC",
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Pending QC - Coming Soon")),
+                    Navigator.push(
+
+                        context,
+                        MaterialPageRoute(builder: (_) => const PendingQCScreen()),
                     );
                   },
                 ),
