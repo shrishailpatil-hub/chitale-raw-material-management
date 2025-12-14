@@ -60,7 +60,7 @@ class _LoginUIState extends State<LoginUI> {
 
             // White card background
             Positioned(
-              left: 9,
+              left: -5,
               top: 234,
               child: Container(
                 width: 422,
@@ -96,7 +96,7 @@ class _LoginUIState extends State<LoginUI> {
 
             // Username field
             Positioned(
-              left: 35,
+              left: 20,
               top: 444,
               child: Container(
                 width: 371,
@@ -119,7 +119,7 @@ class _LoginUIState extends State<LoginUI> {
 
             // Password field
             Positioned(
-              left: 35,
+              left: 20,
               top: 525,
               child: Container(
                 width: 371,
@@ -237,7 +237,7 @@ class _LoginUIState extends State<LoginUI> {
               top: 272,
               child: Container(
                 width: 200,
-                height: 70,
+                height: 110,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage("lib/assets/images/chitalebandhulogo.webp"),
