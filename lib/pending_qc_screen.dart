@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'qc_review_screen.dart';
 
 class PendingQCScreen extends StatelessWidget {
   const PendingQCScreen({super.key});
@@ -88,8 +89,8 @@ class _PendingQCCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Open QC for $batch')),
+        Navigator.push(context,
+        MaterialPageRoute(builder: (_)=>QCReviewScreen()),
         );
       },
       child: Container(

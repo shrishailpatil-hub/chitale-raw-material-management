@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'pending_qc_screen.dart';
 import 'qc_scan_batch_screen.dart';
 
+
 class QCDashboard extends StatelessWidget {
   const QCDashboard({super.key});
 
@@ -12,7 +13,7 @@ class QCDashboard extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C4175),
         title: const Text(
-          'R&D Dashboard',
+          'QC Dashboard',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),

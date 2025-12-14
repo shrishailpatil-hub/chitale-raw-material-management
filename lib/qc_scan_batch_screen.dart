@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'qc_review_screen.dart';
 
 class QCScanBatchScreen extends StatefulWidget {
   const QCScanBatchScreen({super.key});
@@ -109,11 +110,10 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
                 ),
                 onPressed: scannedBatch != null
                     ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Proceeding to QC Review (mock)'),
-                    ),
-                  );
+                 Navigator.push(
+                   context,
+                   MaterialPageRoute(builder: (_)=>const QCReviewScreen()),
+                 );
                 }
                     : null,
                 child: const Text(
