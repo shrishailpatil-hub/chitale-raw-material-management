@@ -108,6 +108,7 @@ class _LoginUIState extends State<LoginUI> {
                   border: Border.all(width: 2, color: Color(0xFFBBBBBB)),
                 ),
                 child: TextFormField(
+                  style: TextStyle(color: Colors.black),
                   controller: usernameController,
                   decoration: const InputDecoration(
                     hintText: 'Username',

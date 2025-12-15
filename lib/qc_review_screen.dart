@@ -3,7 +3,26 @@ import 'package:flutter/material.dart';
 enum QCStatus { approved, onHold, rejected }
 
 class QCReviewScreen extends StatefulWidget {
-  const QCReviewScreen({super.key});
+  final String material;
+  final String batch;
+  final String vendor;
+  final String grn;
+  final String mfgDate;
+  final String expDate;
+  final String sampleQty;
+  final String regDate; // ✅ KEPT
+
+  const QCReviewScreen({
+    super.key,
+    required this.material,
+    required this.batch,
+    required this.vendor,
+    required this.grn,
+    required this.mfgDate,
+    required this.expDate,
+    required this.sampleQty,
+    required this.regDate,
+  });
 
   @override
   State<QCReviewScreen> createState() => _QCReviewScreenState();
@@ -24,12 +43,14 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C4175),
         title: const Text(
-          'Quality Control',
+          'Quality Control Review',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
+
+      // ---------- BODY (SCROLLABLE CONTENT) ----------
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         child: Column(
           children: [
             _batchDetailsCard(),
@@ -37,12 +58,37 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
             _qcStatusSelector(),
             const SizedBox(height: 20),
             _remarkSection(),
-            const SizedBox(height: 30),
-            _submitButton(),
           ],
         ),
       ),
+
+      // ---------- FIXED SUBMIT BUTTON ----------
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E7CCC),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: _submitQC,
+              child: const Text(
+                'SUBMIT QC RECORD',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
+
   }
 
   // ---------------- BATCH DETAILS ----------------
@@ -51,14 +97,15 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
       title: 'Batch Details',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          _InfoRow(label: 'Material', value: 'Sugar (Fine Grade)'),
-          _InfoRow(label: 'Batch No', value: '#2025-10-28-01'),
-          _InfoRow(label: 'GRN', value: '#25-9982'),
-          _InfoRow(label: 'Vendor', value: 'ABC Agro Supplies'),
-          _InfoRow(label: 'Mfg Date', value: '28/10/2025'),
-          _InfoRow(label: 'Exp Date', value: '28/04/2026'),
-          _InfoRow(label: 'Sample Qty', value: '500 g'),
+        children: [
+          _InfoRow(label: 'Material', value: widget.material),
+          _InfoRow(label: 'Batch No', value: widget.batch),
+          _InfoRow(label: 'GRN', value: widget.grn),
+          _InfoRow(label: 'Vendor', value: widget.vendor),
+          _InfoRow(label: 'Reg Date', value: widget.regDate), // ✅ SHOWN
+          _InfoRow(label: 'Mfg Date', value: widget.mfgDate),
+          _InfoRow(label: 'Exp Date', value: widget.expDate),
+          _InfoRow(label: 'Sample Qty', value: widget.sampleQty),
         ],
       ),
     );
@@ -69,7 +116,6 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
     return _sectionCard(
       title: 'Select QC Status',
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _statusButton(
             label: 'APPROVED',
@@ -148,9 +194,9 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           const Text(
-            'Validated by: Arun Jadhav (R&D Staff)\nTimestamp: Auto captured on submission',
+            'Validated by: Arun Jadhav (QC Staff)\nTimestamp: Auto captured on submission',
             style: TextStyle(fontSize: 13, color: Colors.grey),
           ),
         ],
@@ -160,24 +206,31 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
 
   // ---------------- SUBMIT ----------------
   Widget _submitButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2E7CCC),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8), // ⬅️ reduce this to move UP more
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2E7CCC),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
-        ),
-        onPressed: _submitQC,
-        child: const Text(
-          'SUBMIT QC RECORD',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          onPressed: _submitQC,
+          child: const Text(
+            'SUBMIT QC RECORD',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
       ),
     );
   }
+
 
   void _submitQC() {
     if (selectedStatus == null) {
@@ -190,8 +243,30 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('QC Record Submitted (mock)')),
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Submission'),
+        content: const Text('Are you sure you want to submit this QC record?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('QC Record Submitted Successfully (mock)'),
+                ),
+              );
+              Navigator.pop(context);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -223,7 +298,6 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
           Text(
             title.toUpperCase(),
             style: const TextStyle(
-              color: Colors.black,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -253,10 +327,18 @@ class _InfoRow extends StatelessWidget {
             width: 110,
             child: Text(
               '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w600,color: Colors.black),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
             ),
           ),
-          Expanded(child: Text(value,style: TextStyle(color: Colors.black),)),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.black),
+            ),
+          ),
         ],
       ),
     );

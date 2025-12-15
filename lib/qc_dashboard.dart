@@ -61,7 +61,7 @@ class QCDashboard extends StatelessWidget {
               children: [
                 _statCard("1", "Rejected QC", const Color(0xFFFF5023)),
                 const SizedBox(width: 12),
-                _statCard("8", "Pending QC", const Color(0xFFF55F51)),
+                _statCard("3", "Pending QC", const Color(0xFFF55F51)),
               ],
             ),
 
@@ -124,8 +124,34 @@ class QCDashboard extends StatelessWidget {
                 _actionCard(
                   icon: Icons.logout,
                   label: "Logout",
-                  onTap: () => Navigator.pop(context),
+                  onTap: () async {
+                    final shouldLogout = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text("Logout"),
+                        content: const Text("Are you sure you want to logout?"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, false),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            child: const Text(
+                              "Logout",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (shouldLogout == true) {
+                      Navigator.pop(context);
+                    }
+                  },
                 ),
+
               ],
             ),
           ],

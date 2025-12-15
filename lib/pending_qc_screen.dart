@@ -89,9 +89,23 @@ class _PendingQCCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
-        Navigator.push(context,
-        MaterialPageRoute(builder: (_)=>QCReviewScreen()),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const QCReviewScreen(
+              material: 'Whole Wheat Flour',
+              batch: '#BATCH-2025-10-28',
+              vendor: 'ABC Agro Supplies',
+              grn: '#25-9982',
+              regDate: '01/11/2025',
+              mfgDate: '28/10/2025',
+              expDate: '28/04/2026',
+              sampleQty: '500 g',
+            ),
+          ),
         );
+
+
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

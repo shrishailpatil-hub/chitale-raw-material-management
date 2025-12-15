@@ -112,7 +112,20 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
                     ? () {
                  Navigator.push(
                    context,
-                   MaterialPageRoute(builder: (_)=>const QCReviewScreen()),
+                   MaterialPageRoute(
+                     builder: (_) => const QCReviewScreen(
+                       material: 'Sugar (Fine Grade)',
+                       batch: '#BATCH-2025-10-28',
+                       vendor: 'ABC Agro Supplies',
+                       grn: '#25-9982',
+                       regDate: '20/11/2025',
+                       mfgDate: '28/10/2025',
+                       expDate: '28/04/2026',
+                       sampleQty: '500 g',
+                     ),
+                   ),
+
+
                  );
                 }
                     : null,
