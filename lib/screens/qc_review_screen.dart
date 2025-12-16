@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'models/batch.dart';
 
-enum QCStatus { approved, onHold, rejected }
-
+import '../models/batch.dart';
+import '../models/qc_record.dart';
+import '../services/qc_service.dart';
 
 class QCReviewScreen extends StatefulWidget {
   final Batch batch;
@@ -15,7 +15,6 @@ class QCReviewScreen extends StatefulWidget {
   @override
   State<QCReviewScreen> createState() => _QCReviewScreenState();
 }
-
 
 class _QCReviewScreenState extends State<QCReviewScreen> {
   QCStatus? selectedStatus;
@@ -37,7 +36,7 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
         ),
       ),
 
-      // ---------- BODY (SCROLLABLE CONTENT) ----------
+      // ---------- BODY ----------
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         child: Column(
@@ -77,7 +76,6 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
         ),
       ),
     );
-
   }
 
   // ---------------- BATCH DETAILS ----------------
@@ -95,7 +93,6 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
           _InfoRow(label: 'Mfg Date', value: widget.batch.mfgDate),
           _InfoRow(label: 'Exp Date', value: widget.batch.expDate),
           _InfoRow(label: 'Sample Qty', value: widget.batch.sampleQty),
-
         ],
       ),
     );
@@ -195,10 +192,6 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
   }
 
   // ---------------- SUBMIT ----------------
-
-
-
-
   void _submitQC() {
     if (selectedStatus == null) {
       _showError('Please select QC status');
@@ -222,13 +215,15 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('QC Record Submitted Successfully (mock)'),
-                ),
+              QCService().submitQC(
+                batch: widget.batch,
+                status: selectedStatus!,
+                remarks: remarkController.text.trim(),
+                reviewedBy: 'Arun Jadhav',
               );
-              Navigator.pop(context);
+
+              Navigator.pop(ctx);       // close dialog
+              Navigator.pop(context);   // back to Pending QC
             },
             child: const Text('Confirm'),
           ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/admin_dashboard.dart';
+import 'admin_dashboard.dart';
 import 'qc_dashboard.dart';
 
 class LoginPage extends StatelessWidget {

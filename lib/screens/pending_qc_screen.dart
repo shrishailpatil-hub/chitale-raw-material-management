@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'models/batch.dart';
+import '../models/batch.dart';
+import '../services/qc_service.dart';
 import 'qc_review_screen.dart';
-import 'services/batch_service.dart';
 
 class PendingQCScreen extends StatelessWidget {
   const PendingQCScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final List<Batch> pendingBatches =
-    BatchService.getPendingQCBatches(); // ✅ SINGLE SOURCE
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -39,13 +36,34 @@ class PendingQCScreen extends StatelessWidget {
             ),
           ),
 
-          // ---------------- LIST ----------------
+          // ---------------- REACTIVE LIST ----------------
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: pendingBatches.length,
-              itemBuilder: (context, index) {
-                return _PendingQCCard(batch: pendingBatches[index]);
+            child: ValueListenableBuilder<List<Batch>>(
+              // ✅ THIS IS THE KEY: Listen to the Service directly
+              valueListenable: QCService().pendingBatchesNotifier,
+              builder: (context, batches, child) {
+
+                if (batches.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No pending QC batches 🎉',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: batches.length,
+                  itemBuilder: (context, index) {
+                    final batch = batches[index];
+                    return _PendingQCCard(batch: batch);
+                  },
+                );
               },
             ),
           ),
@@ -55,10 +73,7 @@ class PendingQCScreen extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------
-// QC CARD
-// ----------------------------------------------------
-
+// ---------------- QC CARD ----------------
 class _PendingQCCard extends StatelessWidget {
   final Batch batch;
 
@@ -72,16 +87,7 @@ class _PendingQCCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => QCReviewScreen(
-              material: batch.material,
-              batch: batch.batchNo,
-              vendor: batch.vendor,
-              grn: batch.grn,
-              regDate: batch.regDate,
-              mfgDate: batch.mfgDate,
-              expDate: batch.expDate,
-              sampleQty: batch.sampleQty,
-            ),
+            builder: (_) => QCReviewScreen(batch: batch),
           ),
         );
       },
@@ -102,60 +108,36 @@ class _PendingQCCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  batch.material,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                Expanded(
+                  child: Text(
+                    batch.material,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                _statusBadge(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD875),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Pending',
+                    style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black),
+                  ),
+                ),
               ],
             ),
-
             const SizedBox(height: 8),
-
-            Text(
-              'Batch No: ${batch.batchNo}',
-              style: const TextStyle(color: Colors.black, fontSize: 16),
-            ),
-            Text(
-              'Vendor: ${batch.vendor}',
-              style: const TextStyle(color: Colors.black, fontSize: 16),
-            ),
-
-            const Divider(height: 20),
-
-            Text(
-              'Reg Date: ${batch.regDate}',
-              style: const TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text('Batch No: ${batch.batchNo}', style: const TextStyle(color: Colors.black)),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _statusBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFD875),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Text(
-        'Pending',
-        style: TextStyle(
-          color: Colors.black,
-          fontWeight: FontWeight.w700,
         ),
       ),
     );

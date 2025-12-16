@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'screens/pending_qc_screen.dart';
+import '../models/batch.dart';
+import '../models/qc_record.dart';
+import '../services/qc_service.dart';
 import 'qc_scan_batch_screen.dart';
-
+import 'pending_qc_screen.dart';
+import 'qc_history_screen.dart';
 
 class QCDashboard extends StatelessWidget {
   const QCDashboard({super.key});
@@ -22,7 +25,6 @@ class QCDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // ---------------- WELCOME ----------------
             const Text(
               "Welcome,\nAditi Kadam",
@@ -35,7 +37,7 @@ class QCDashboard extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // ---------------- QUICK STATS ----------------
+            // ---------------- QUICK STATS (REACTIVE) ----------------
             const Text(
               "Quick Stats",
               style: TextStyle(
@@ -47,22 +49,53 @@ class QCDashboard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            Row(
-              children: [
-                _statCard("7", "Approved QC", const Color(0xFF39B54A)),
-                const SizedBox(width: 12),
-                _statCard("5", "On Hold QC", const Color(0xFFFFC107)),
-              ],
-            ),
+            // ⚡ MAGIC HAPPENS HERE: Listening to Data Changes
+            ValueListenableBuilder<List<QCRecord>>(
+              valueListenable: QCService().qcHistoryNotifier,
+              builder: (context, history, child) {
+                // Calculate History Stats
+                final int approvedCount = history
+                    .where((r) => r.status == QCStatus.approved)
+                    .length;
+                final int rejectedCount = history
+                    .where((r) => r.status == QCStatus.rejected)
+                    .length;
+                final int onHoldCount = history
+                    .where((r) => r.status == QCStatus.onHold)
+                    .length;
 
-            const SizedBox(height: 12),
+                return ValueListenableBuilder<List<Batch>>(
+                  valueListenable: QCService().pendingBatchesNotifier,
+                  builder: (context, pending, child) {
+                    // Calculate Pending Stats
+                    final int pendingCount = pending.length;
 
-            Row(
-              children: [
-                _statCard("1", "Rejected QC", const Color(0xFFFF5023)),
-                const SizedBox(width: 12),
-                _statCard("3", "Pending QC", const Color(0xFFF55F51)),
-              ],
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            _statCard(approvedCount.toString(), "Approved QC",
+                                const Color(0xFF39B54A)),
+                            const SizedBox(width: 12),
+                            _statCard(onHoldCount.toString(), "On Hold QC",
+                                const Color(0xFFFFC107)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _statCard(rejectedCount.toString(), "Rejected QC",
+                                const Color(0xFFFF5023)),
+                            const SizedBox(width: 12),
+                            _statCard(pendingCount.toString(), "Pending QC",
+                                const Color(0xFFF55F51)),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
 
             const SizedBox(height: 30),
@@ -87,40 +120,39 @@ class QCDashboard extends StatelessWidget {
               mainAxisSpacing: 16,
               childAspectRatio: 1.1,
               children: [
-
                 _actionCard(
                   icon: Icons.qr_code_scanner,
                   label: "Scan Batch",
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_)=>const QCScanBatchScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const QCScanBatchScreen()),
                     );
                   },
                 ),
-
                 _actionCard(
                   icon: Icons.pending_actions,
                   label: "Pending QC",
                   onTap: () {
                     Navigator.push(
-
-                        context,
-                        MaterialPageRoute(builder: (_) => const PendingQCScreen()),
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const PendingQCScreen()),
                     );
                   },
                 ),
-
                 _actionCard(
                   icon: Icons.history,
                   label: "QC History",
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("QC History - Coming Soon")),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const QCHistoryScreen()),
                     );
                   },
                 ),
-
                 _actionCard(
                   icon: Icons.logout,
                   label: "Logout",
@@ -132,7 +164,8 @@ class QCDashboard extends StatelessWidget {
                         content: const Text("Are you sure you want to logout?"),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, false),
+                            onPressed: () =>
+                                Navigator.pop(dialogContext, false),
                             child: const Text("Cancel"),
                           ),
                           TextButton(
@@ -151,7 +184,6 @@ class QCDashboard extends StatelessWidget {
                     }
                   },
                 ),
-
               ],
             ),
           ],

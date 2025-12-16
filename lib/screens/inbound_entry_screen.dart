@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:math'; // Required for random numbers
+import '../models/batch.dart';
+import '../services/batch_service.dart';
 
 class InboundEntryScreen extends StatefulWidget {
   const InboundEntryScreen({super.key});
@@ -8,6 +11,7 @@ class InboundEntryScreen extends StatefulWidget {
 }
 
 class _InboundEntryScreenState extends State<InboundEntryScreen> {
+  // Text Controllers
   final _vendorController = TextEditingController();
   final _vehicleController = TextEditingController();
   final _dateController = TextEditingController();
@@ -105,7 +109,7 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
                 ),
                 onPressed: _onGeneratePressed,
                 child: const Text(
-                  'GENERATE GRN & PRINT QR',
+                  'GENERATE GRN & SAVE',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -148,14 +152,11 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
     return TextField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-
-      // 👇 THIS LINE FIXES THE VISIBILITY
       style: const TextStyle(
         color: Colors.black,
         fontSize: 16,
         fontWeight: FontWeight.w500,
       ),
-
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(
@@ -172,7 +173,6 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
         ),
       ),
     );
-
   }
 
   Widget _dateInput(String label, TextEditingController controller) {
@@ -197,26 +197,74 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
         );
 
         if (date != null) {
-          controller.text =
-          '${date.day}/${date.month}/${date.year}';
+          controller.text = '${date.day}/${date.month}/${date.year}';
         }
       },
     );
   }
 
-  /// ---------------- Logic ----------------
+  /// ---------------- LOGIC: THE BRIDGE ----------------
 
   void _onGeneratePressed() {
-    // For now: just verify data is captured
-    debugPrint('Vendor: ${_vendorController.text}');
-    debugPrint('Vehicle: ${_vehicleController.text}');
-    debugPrint('Material: ${_materialController.text}');
-    debugPrint('Batch: ${_batchController.text}');
-    debugPrint('Total Qty: ${_totalQtyController.text}');
-    debugPrint('Sample Qty: ${_sampleQtyController.text}');
+    // 1. Basic Validation
+    if (_materialController.text.isEmpty || _batchController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter Material Name and Batch No'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('GRN Generated (mock)')),
+    // 2. Auto-Generate GRN (Simulating backend logic)
+    final randomId = Random().nextInt(9000) + 1000;
+    final generatedGRN = 'GRN-2025-$randomId';
+
+    // 3. Create the Batch Object
+    final newBatch = Batch(
+      material: _materialController.text,
+      batchNo: _batchController.text,
+      vendor: _vendorController.text,
+      grn: generatedGRN, // ✅ Auto-assigned
+      regDate: _dateController.text.isEmpty ? 'Today' : _dateController.text,
+      mfgDate: _mfgDateController.text,
+      expDate: _expDateController.text,
+      sampleQty: _sampleQtyController.text.isEmpty ? 'N/A' : '${_sampleQtyController.text} g',
+      // status defaults to 'newBatch'
+    );
+
+    // 4. SAVE TO SERVICE (The "Database")
+    BatchService().createBatch(newBatch);
+
+    // 5. Success UI
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Success!"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.qr_code_2, size: 80, color: Colors.black),
+            const SizedBox(height: 10),
+            Text("Batch Saved Successfully.\nGRN: $generatedGRN"),
+            const SizedBox(height: 10),
+            const Text(
+              "QR Code sent to printer...",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Close Dialog
+              Navigator.pop(context); // Go back to Dashboard
+            },
+            child: const Text("Done"),
+          )
+        ],
+      ),
     );
   }
 }
