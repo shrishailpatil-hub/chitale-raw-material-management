@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pending_qc_screen.dart';
+import 'screens/pending_qc_screen.dart';
 import 'qc_scan_batch_screen.dart';
 
 

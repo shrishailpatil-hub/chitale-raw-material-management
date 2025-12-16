@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'models/batch.dart';
 import 'qc_review_screen.dart';
+import 'services/batch_service.dart';
 
 class PendingQCScreen extends StatelessWidget {
   const PendingQCScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final List<Batch> pendingBatches =
+    BatchService.getPendingQCBatches(); // ✅ SINGLE SOURCE
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -23,7 +28,6 @@ class PendingQCScreen extends StatelessWidget {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search material or batch #',
-                hintStyle: TextStyle(color: Colors.grey.shade600),
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
@@ -37,28 +41,12 @@ class PendingQCScreen extends StatelessWidget {
 
           // ---------------- LIST ----------------
           Expanded(
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: const [
-                _PendingQCCard(
-                  material: 'Whole Wheat Flour',
-                  batch: '#BATCH-2025-10-28',
-                  vendor: 'ABC Agro Supplies',
-                  regDate: '01/11/2025',
-                ),
-                _PendingQCCard(
-                  material: 'Sugar (Fine Refine)',
-                  batch: '#BATCH-2025-12-30',
-                  vendor: 'Sweetener Solution Ltd',
-                  regDate: '15/11/2025',
-                ),
-                _PendingQCCard(
-                  material: 'Milk Powder',
-                  batch: '#BATCH-2025-14-10',
-                  vendor: 'ABC Agro Supplies',
-                  regDate: '20/11/2025',
-                ),
-              ],
+              itemCount: pendingBatches.length,
+              itemBuilder: (context, index) {
+                return _PendingQCCard(batch: pendingBatches[index]);
+              },
             ),
           ),
         ],
@@ -72,17 +60,9 @@ class PendingQCScreen extends StatelessWidget {
 // ----------------------------------------------------
 
 class _PendingQCCard extends StatelessWidget {
-  final String material;
-  final String batch;
-  final String vendor;
-  final String regDate;
+  final Batch batch;
 
-  const _PendingQCCard({
-    required this.material,
-    required this.batch,
-    required this.vendor,
-    required this.regDate,
-  });
+  const _PendingQCCard({required this.batch});
 
   @override
   Widget build(BuildContext context) {
@@ -92,20 +72,18 @@ class _PendingQCCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const QCReviewScreen(
-              material: 'Whole Wheat Flour',
-              batch: '#BATCH-2025-10-28',
-              vendor: 'ABC Agro Supplies',
-              grn: '#25-9982',
-              regDate: '01/11/2025',
-              mfgDate: '28/10/2025',
-              expDate: '28/04/2026',
-              sampleQty: '500 g',
+            builder: (_) => QCReviewScreen(
+              material: batch.material,
+              batch: batch.batchNo,
+              vendor: batch.vendor,
+              grn: batch.grn,
+              regDate: batch.regDate,
+              mfgDate: batch.mfgDate,
+              expDate: batch.expDate,
+              sampleQty: batch.sampleQty,
             ),
           ),
         );
-
-
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -129,7 +107,7 @@ class _PendingQCCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  material,
+                  batch.material,
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 20,
@@ -143,21 +121,20 @@ class _PendingQCCard extends StatelessWidget {
             const SizedBox(height: 8),
 
             Text(
-              'Batch No: $batch',
-              style: const TextStyle(fontSize: 16,color: Colors.black),
+              'Batch No: ${batch.batchNo}',
+              style: const TextStyle(color: Colors.black, fontSize: 16),
             ),
             Text(
-              'Vendor: $vendor',
-              style: const TextStyle(fontSize: 16,color: Colors.black),
+              'Vendor: ${batch.vendor}',
+              style: const TextStyle(color: Colors.black, fontSize: 16),
             ),
 
             const Divider(height: 20),
 
             Text(
-              'Reg Date: $regDate',
+              'Reg Date: ${batch.regDate}',
               style: const TextStyle(
                 color: Colors.black,
-                fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
             ),

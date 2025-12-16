@@ -1,32 +1,21 @@
 import 'package:flutter/material.dart';
+import 'models/batch.dart';
 
 enum QCStatus { approved, onHold, rejected }
 
+
 class QCReviewScreen extends StatefulWidget {
-  final String material;
-  final String batch;
-  final String vendor;
-  final String grn;
-  final String mfgDate;
-  final String expDate;
-  final String sampleQty;
-  final String regDate; // ✅ KEPT
+  final Batch batch;
 
   const QCReviewScreen({
     super.key,
-    required this.material,
     required this.batch,
-    required this.vendor,
-    required this.grn,
-    required this.mfgDate,
-    required this.expDate,
-    required this.sampleQty,
-    required this.regDate,
   });
 
   @override
   State<QCReviewScreen> createState() => _QCReviewScreenState();
 }
+
 
 class _QCReviewScreenState extends State<QCReviewScreen> {
   QCStatus? selectedStatus;
@@ -98,14 +87,15 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _InfoRow(label: 'Material', value: widget.material),
-          _InfoRow(label: 'Batch No', value: widget.batch),
-          _InfoRow(label: 'GRN', value: widget.grn),
-          _InfoRow(label: 'Vendor', value: widget.vendor),
-          _InfoRow(label: 'Reg Date', value: widget.regDate), // ✅ SHOWN
-          _InfoRow(label: 'Mfg Date', value: widget.mfgDate),
-          _InfoRow(label: 'Exp Date', value: widget.expDate),
-          _InfoRow(label: 'Sample Qty', value: widget.sampleQty),
+          _InfoRow(label: 'Material', value: widget.batch.material),
+          _InfoRow(label: 'Batch No', value: widget.batch.batchNo),
+          _InfoRow(label: 'GRN', value: widget.batch.grn),
+          _InfoRow(label: 'Vendor', value: widget.batch.vendor),
+          _InfoRow(label: 'Reg Date', value: widget.batch.regDate),
+          _InfoRow(label: 'Mfg Date', value: widget.batch.mfgDate),
+          _InfoRow(label: 'Exp Date', value: widget.batch.expDate),
+          _InfoRow(label: 'Sample Qty', value: widget.batch.sampleQty),
+
         ],
       ),
     );
@@ -205,31 +195,8 @@ class _QCReviewScreenState extends State<QCReviewScreen> {
   }
 
   // ---------------- SUBMIT ----------------
-  Widget _submitButton() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8), // ⬅️ reduce this to move UP more
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2E7CCC),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-          onPressed: _submitQC,
-          child: const Text(
-            'SUBMIT QC RECORD',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
+
 
 
   void _submitQC() {

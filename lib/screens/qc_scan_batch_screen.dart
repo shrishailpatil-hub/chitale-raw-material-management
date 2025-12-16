@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'models/batch.dart';
 import 'qc_review_screen.dart';
+import 'services/batch_service.dart';
 
 class QCScanBatchScreen extends StatefulWidget {
   const QCScanBatchScreen({super.key});
@@ -9,7 +11,7 @@ class QCScanBatchScreen extends StatefulWidget {
 }
 
 class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
-  String? scannedBatch;
+  Batch? scannedBatch;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +30,6 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
           children: [
             const SizedBox(height: 20),
 
-            // ---------------- INSTRUCTION ----------------
             const Text(
               'Scan Raw Material Batch QR',
               textAlign: TextAlign.center,
@@ -52,7 +53,6 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
 
             const SizedBox(height: 40),
 
-            // ---------------- SCAN AREA ----------------
             Container(
               height: 260,
               width: double.infinity,
@@ -71,7 +71,6 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
 
             const SizedBox(height: 30),
 
-            // ---------------- SCAN BUTTON ----------------
             ElevatedButton.icon(
               icon: const Icon(Icons.qr_code_scanner),
               label: const Text(
@@ -90,43 +89,31 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
 
             const SizedBox(height: 20),
 
-            // ---------------- RESULT ----------------
-            if (scannedBatch != null)
-              _scanResultCard(scannedBatch!),
+            if (scannedBatch != null) _scanResultCard(scannedBatch!),
 
             const Spacer(),
 
-            // ---------------- CONTINUE ----------------
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                  scannedBatch != null ? const Color(0xFF1C4175) : Colors.grey,
+                  backgroundColor: scannedBatch != null
+                      ? const Color(0xFF1C4175)
+                      : Colors.grey,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 onPressed: scannedBatch != null
                     ? () {
-                 Navigator.push(
-                   context,
-                   MaterialPageRoute(
-                     builder: (_) => const QCReviewScreen(
-                       material: 'Sugar (Fine Grade)',
-                       batch: '#BATCH-2025-10-28',
-                       vendor: 'ABC Agro Supplies',
-                       grn: '#25-9982',
-                       regDate: '20/11/2025',
-                       mfgDate: '28/10/2025',
-                       expDate: '28/04/2026',
-                       sampleQty: '500 g',
-                     ),
-                   ),
-
-
-                 );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          QCReviewScreen(batch: scannedBatch!),
+                    ),
+                  );
                 }
                     : null,
                 child: const Text(
@@ -145,14 +132,17 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
   }
 
   // ---------------- MOCK SCAN ----------------
+
+
   void _mockScan() {
     setState(() {
-      scannedBatch = '#BATCH-2025-10-28';
+      scannedBatch = BatchService.scanBatchFromQR();
     });
   }
 
+
   // ---------------- RESULT CARD ----------------
-  Widget _scanResultCard(String batch) {
+  Widget _scanResultCard(Batch batch) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -177,7 +167,7 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Batch Scanned Successfully\n$batch',
+              'Batch Scanned Successfully\n${batch.batchNo}',
               style: const TextStyle(
                 color: Colors.black,
                 fontSize: 16,

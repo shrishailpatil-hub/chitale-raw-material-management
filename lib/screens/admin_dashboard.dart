@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'inbound_entry_screen.dart';
+import '../inbound_entry_screen.dart';
 import 'shelf_assign_screen.dart';
-import 'issue_material_screen.dart';
+import '../issue_material_screen.dart';
 
 
 class AdminDashboard extends StatefulWidget {
