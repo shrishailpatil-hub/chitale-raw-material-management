@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/database_helper.dart';
 import 'inbound_entry_screen.dart';
 import 'shelf_assign_screen.dart';
 import 'issue_material_screen.dart';
-
+import 'loginpage.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -12,182 +13,141 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  bool inboundPressed = false;
-  bool shelfPressed = false;
-  bool issuePressed = false;
-  bool logoutPressed = false;
+  // Stats State
+  Map<String, int> stats = {
+    'putAway': 0,
+    'pendingQC': 0,
+    'lowStock': 0,
+    'total': 0,
+  };
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  // Reload stats whenever we come back to this screen
+  void _loadStats() async {
+    final newStats = await DatabaseHelper.instance.getAdminStats();
+    if (mounted) {
+      setState(() {
+        stats = newStats;
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Refresh stats when pulling down or coming back
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1C4175),
+        title: const Text('Operator Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadStats, // Manual refresh
+          )
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async => _loadStats(),
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              // ---------------- TOP BAR ----------------
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1C4175),
-                ),
-                child: const Center(
-                  child: Text(
-                    "Operator Dashboard",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
+              // ---------------- WELCOME ----------------
+              const Text(
+                "Welcome,\nArun Jadhav",
+                style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.w700),
               ),
-
               const SizedBox(height: 20),
 
-              // ---------------- WELCOME TEXT ----------------
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Welcome,\nArun Jadhav",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-              ),
+              // ---------------- LIVE STATS ----------------
+              const Text("Warehouse Overview", style: TextStyle(fontSize: 18,color: Colors.black , fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
 
-              const SizedBox(height: 20),
-
-              // ---------------- QUICK STATS TITLE ----------------
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Quick Stats",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              // ---------------- QUICK STATS ROW ----------------
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _statCard("12", "Pending GRNs", const Color(0xFFF5B52D)),
-                  _statCard("8", "Pending Issues", const Color(0xFFF55F51)),
+                  _statCard("Pending Put-away", stats['putAway'].toString(), Colors.orange, Icons.shelves),
+                  const SizedBox(width: 12),
+                  _statCard("Low Stock Alerts", stats['lowStock'].toString(), Colors.red, Icons.warning_amber),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _statCard("Pending QC", stats['pendingQC'].toString(), Colors.blue, Icons.science),
+                  const SizedBox(width: 12),
+                  _statCard("Total Batches", stats['total'].toString(), Colors.green, Icons.inventory_2),
                 ],
               ),
 
               const SizedBox(height: 30),
 
-              // ---------------- ACTION MENU TITLE ----------------
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Action Menu",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+              // ---------------- ACTIONS ----------------
+              const Text("Quick Actions", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.1,
+                children: [
+                  _actionCard(
+                    icon: Icons.add_box,
+                    label: "Inbound Entry",
+                    onTap: () => _navigate(const InboundEntryScreen()),
                   ),
-                ),
+                  _actionCard(
+                    icon: Icons.move_to_inbox,
+                    label: "Shelf Assign",
+                    onTap: () => _navigate(const ShelfAssignScreen()),
+                  ),
+                  _actionCard(
+                    icon: Icons.outbox,
+                    label: "Issue Material",
+                    onTap: () {
+                      // TODO: Create IssueMaterialScreen
+                      // _navigate(const IssueMaterialScreen());
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming in Phase 2")));
+                    },
+                  ),
+                  _actionCard(
+                    icon: Icons.logout,
+                    label: "Logout",
+                    onTap: () async {
+                      final shouldLogout = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text("Logout"),
+                          content: const Text("Are you sure?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Logout", style: TextStyle(color: Colors.red))),
+                          ],
+                        ),
+                      );
+                      if (shouldLogout == true) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                              (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 20),
-
-              // ---------------- GRID MENU ----------------
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.count(
-                  shrinkWrap: true,
-                  childAspectRatio: 1.2,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 20,
-                  children: [
-                    _menuButton(
-                      label: "Inbound Entry",
-                      iconPath: "lib/assets/images/inbound.webp",
-                      pressed: inboundPressed,
-                      onPressDown: () => setState(() => inboundPressed = true),
-                      onPressUp: () => setState(() => inboundPressed = false),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const InboundEntryScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-
-                    _menuButton(
-                      label: "Shelf Assign",
-                      iconPath: "lib/assets/images/shelfs.webp",
-                      pressed: shelfPressed,
-                      onPressDown: () => setState(() => shelfPressed = true),
-                      onPressUp: () => setState(() => shelfPressed = false),
-                      onTap: () {
-                        Navigator.push(
-
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ShelfAssignScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    _menuButton(
-                      label: "Issue Material",
-                      iconPath: "lib/assets/images/issues.webp",
-                      pressed: issuePressed,
-                      onPressDown: () => setState(() => issuePressed = true),
-                      onPressUp: () => setState(() => issuePressed = false),
-                      onTap: () {
-                        Navigator.push(
-
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const IssueMaterialScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    _menuButton(
-                      label: "Logout",
-                      iconPath: "lib/assets/images/logout.webp",
-                      pressed: logoutPressed,
-                      onPressDown: () => setState(() => logoutPressed = true),
-                      onPressUp: () => setState(() => logoutPressed = false),
-                      onTap: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -195,110 +155,60 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ---------------- STAT CARD ----------------
-  Widget _statCard(String value, String label, Color color) {
-    return Container(
-      width: 170,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
+  // ---------------- HELPERS ----------------
+
+  void _navigate(Widget screen) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    _loadStats(); // Refresh stats when coming back
+  }
+
+  Widget _statCard(String label, String value, Color color, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, color: color, size: 28),
+                Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+              ],
             ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          )
-        ],
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black54)),
+          ],
+        ),
       ),
     );
   }
 
-  // ---------------- MENU BUTTON (IMAGE BACKGROUND + BLUR + TEXT) ----------------
-  Widget _menuButton({
-    required String label,
-    required String iconPath,
-    required bool pressed,
-    required VoidCallback onPressDown,
-    required VoidCallback onPressUp,
-    required VoidCallback onTap,
-  }) {
-    return Listener(
-      onPointerDown: (_) => onPressDown(),
-      onPointerUp: (_) => onPressUp(),
-      child: AnimatedScale(
-        scale: pressed ? 0.92 : 1,
-        duration: const Duration(milliseconds: 120),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Ink(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x3F000000),
-                  blurRadius: 6,
-                  offset: Offset(2, 2),
-                )
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-
-                  // BACKGROUND IMAGE
-                  Positioned.fill(
-                    child: Image.asset(
-                      iconPath,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-
-                  // LIGHT BLUR (WHITE TRANSPARENT OVERLAY)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.white.withOpacity(0.35),
-                    ),
-                  ),
-
-                  // TEXT ON TOP
-                  Center(
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        shadows: [
-                          Shadow(
-                            color: Colors.white,
-                            blurRadius: 3,
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+  Widget _actionCard({required IconData icon, required String label, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [BoxShadow(color: Color(0x1F000000), blurRadius: 8, offset: Offset(2, 2))],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 42, color: const Color(0xFF1C4175)),
+            const SizedBox(height: 12),
+            Text(label, style: const TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold)),
+          ],
         ),
       ),
     );

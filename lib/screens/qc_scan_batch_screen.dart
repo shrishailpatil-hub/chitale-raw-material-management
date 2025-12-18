@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/batch.dart';
 import '../services/batch_service.dart';
+import '../services/database_helper.dart';
 import '../services/qc_service.dart';
 import 'qc_review_screen.dart';
 import 'scanner_screen.dart'; // ✅ Import the new scanner screen
@@ -152,15 +153,20 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
     }
   }
 
-  void _processScan(String batchNo) {
+  // Import DatabaseHelper at the top
+  // import '../services/database_helper.dart';
+
+  void _processScan(String batchNo) async {
     if (batchNo.isEmpty) return;
 
-    // 1. LOOK UP IN WAREHOUSE (BatchService)
-    final foundBatch = BatchService().findBatchByNo(batchNo);
+    // ✅ 1. LOOK UP IN DATABASE
+    final batchMap = await DatabaseHelper.instance.getBatch(batchNo);
 
-    if (foundBatch != null) {
-      // ✅ SUCCESS: We found real data!
-      // Add it to the QC Pending list so we can track it
+    if (batchMap != null) {
+      // Found! Convert Map to Batch
+      final foundBatch = Batch.fromMap(batchMap);
+
+      // Add to QC Service (for the Pending List)
       QCService().addBatchForQC(foundBatch);
 
       setState(() {
@@ -168,14 +174,13 @@ class _QCScanBatchScreenState extends State<QCScanBatchScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Batch $batchNo found in system! ✅")),
+        SnackBar(content: Text("Batch $batchNo found in DB! ✅")),
       );
     } else {
-      // ❌ FAILURE: Batch doesn't exist
+      // Not Found
       setState(() {
         scannedBatch = null;
       });
-
       _showErrorDialog(batchNo);
     }
   }

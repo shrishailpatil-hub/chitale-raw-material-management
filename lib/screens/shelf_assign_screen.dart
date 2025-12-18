@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../models/batch.dart';
+import '../services/batch_service.dart';
+import 'scanner_screen.dart'; // ✅ Uses the real camera
 
 class ShelfAssignScreen extends StatefulWidget {
   const ShelfAssignScreen({super.key});
@@ -9,12 +12,8 @@ class ShelfAssignScreen extends StatefulWidget {
 
 class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
   // ---- State ----
-  bool batchScanned = false;
-
-  String? materialName;
-  String? batchNo;
-  String? qcStatus;
-  String? shelfId;
+  Batch? selectedBatch;
+  String? scannedShelfId;
 
   @override
   Widget build(BuildContext context) {
@@ -33,116 +32,72 @@ class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
           children: [
 
             /// STEP 1: Scan Batch QR
-            ElevatedButton.icon(
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text(
-                'Scan Batch QR',
-                style: TextStyle(fontSize: 18),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7CCC),
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: _scanBatchQr,
+            _stepCard(
+              title: "Step 1: Identify Batch",
+              isDone: selectedBatch != null,
+              child: selectedBatch == null
+                  ? ElevatedButton.icon(
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('SCAN BATCH QR'),
+                style: _btnStyle(Colors.blue),
+                onPressed: () => _scanQr(isBatch: true),
+              )
+                  : _batchDetailsCard(selectedBatch!),
             ),
 
             const SizedBox(height: 20),
 
-            /// STEP 2: Batch Details (only after scan)
-            if (batchScanned)
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            /// STEP 2: Scan Shelf QR
+            if (selectedBatch != null)
+              _stepCard(
+                title: "Step 2: Assign Location",
+                isDone: scannedShelfId != null,
+                child: scannedShelfId == null
+                    ? ElevatedButton.icon(
+                  icon: const Icon(Icons.shelves),
+                  label: const Text('SCAN SHELF QR'),
+                  style: _btnStyle(Colors.orange),
+                  onPressed: () => _scanQr(isBatch: false),
+                )
+                    : Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange),
+                  ),
+                  child: Row(
                     children: [
+                      const Icon(Icons.location_on, color: Colors.orange),
+                      const SizedBox(width: 12),
                       Text(
-                        materialName!,
+                        "Location: $scannedShelfId",
                         style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Batch No: $batchNo',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Chip(
-                        label: Text(
-                          qcStatus!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        backgroundColor: const Color(0xFF39B54A),
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                 ),
               ),
 
-            const SizedBox(height: 30),
-
-            /// STEP 3: Scan Shelf QR (only after batch scan)
-            if (batchScanned)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.qr_code),
-                label: const Text(
-                  'Scan Shelf QR',
-                  style: TextStyle(fontSize: 18),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7CCC),
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: _scanShelfQr,
-              ),
-
-            const SizedBox(height: 20),
-
-            /// Show scanned shelf
-            if (shelfId != null)
-              Text(
-                'Assigned Shelf: $shelfId',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-
             const Spacer(),
 
-            /// STEP 4: Confirm
+            /// STEP 3: Confirm
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: shelfId == null
-                      ? Colors.grey
-                      : const Color(0xFF2E7CCC),
+                  backgroundColor: (selectedBatch != null && scannedShelfId != null)
+                      ? const Color(0xFF2E7CCC)
+                      : Colors.grey,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: shelfId == null ? null : _confirmAssignment,
+                onPressed: (selectedBatch != null && scannedShelfId != null)
+                    ? _confirmAssignment
+                    : null,
                 child: const Text(
                   'CONFIRM ASSIGNMENT',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -155,31 +110,101 @@ class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
     );
   }
 
-  // ---------------- LOGIC ----------------
+  // ---------------- UI HELPERS ----------------
 
-  void _scanBatchQr() {
-    // MOCK QR result (later from scanner)
-    setState(() {
-      batchScanned = true;
-      materialName = 'Sugar (Fine Grade)';
-      batchNo = '#2025-10-28-01';
-      qcStatus = 'QC Passed';
-    });
+  Widget _stepCard({required String title, required bool isDone, required Widget child}) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(isDone ? Icons.check_circle : Icons.circle_outlined,
+                    color: isDone ? Colors.green : Colors.grey),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
+      ),
+    );
   }
 
-  void _scanShelfQr() {
-    // MOCK shelf scan
-    setState(() {
-      shelfId = 'RACK-02 / SHELF-04';
-    });
+  Widget _batchDetailsCard(Batch batch) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(batch.material, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text("Batch: ${batch.batchNo}", style: const TextStyle(fontSize: 16)),
+        const SizedBox(height: 5),
+        Chip(
+          label: Text(batch.status.name.toUpperCase()),
+          backgroundColor: batch.status == BatchStatus.approved
+              ? Colors.green.shade100
+              : Colors.orange.shade100,
+        )
+      ],
+    );
+  }
+
+  ButtonStyle _btnStyle(Color color) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: color,
+      minimumSize: const Size(double.infinity, 50),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
+  // ---------------- LOGIC ----------------
+
+  void _scanQr({required bool isBatch}) async {
+    // 1. Open Camera
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const ScannerScreen()),
+    );
+
+    if (code == null) return;
+
+    if (isBatch) {
+      // 2. Find Batch in System
+      final batch = BatchService().findBatchByNo(code);
+      if (batch != null) {
+        setState(() => selectedBatch = batch);
+      } else {
+        _showError("Batch '$code' not found in Inbound Entry!");
+      }
+    } else {
+      // 3. Set Shelf (Any QR code works for a shelf ID)
+      setState(() => scannedShelfId = code);
+    }
   }
 
   void _confirmAssignment() {
+    // 4. Save the location to the batch object
+    if (selectedBatch != null && scannedShelfId != null) {
+      selectedBatch!.shelfLocation = scannedShelfId;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Material Stored Successfully!')),
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Shelf assignment successful (mock)'),
-      ),
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
     );
-    Navigator.pop(context);
   }
 }

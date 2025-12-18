@@ -34,6 +34,20 @@ class QCService {
     required String reviewedBy,
     Map<String, dynamic>? parameters,
   }) {
+    print("📢 QCService: Submitting QC for ${batch.batchNo} - Status: $status");
+
+    // ---------------------------------------------------------
+    // ✅ THE MISSING LINK: Update the actual Batch object!
+    // ---------------------------------------------------------
+    if (status == QCStatus.approved) {
+      batch.status = BatchStatus.approved;
+    } else if (status == QCStatus.rejected) {
+      batch.status = BatchStatus.rejected;
+    } else if (status == QCStatus.onHold) {
+      batch.status = BatchStatus.onHold;
+    }
+
+    // 1. Create the History Record
     final record = QCRecord(
       batch: batch,
       status: status,
@@ -43,12 +57,18 @@ class QCService {
       parameters: parameters ?? {},
     );
 
-    // Logic: Keep in pending if On Hold, remove otherwise
-    if (status != QCStatus.onHold) {
-      _pendingBatches.removeWhere((b) => b.batchNo.trim() == batch.batchNo.trim());
+    // 2. HANDLE PENDING LIST LOGIC
+    if (status == QCStatus.onHold) {
+      // Keep in list (we already updated batch.status above)
+    } else {
+      // Remove from Pending if Approved or Rejected
+      _pendingBatches.removeWhere((b) => b.batchNo == batch.batchNo);
     }
 
+    // 3. Add to History
     _qcHistory.add(record);
+
+    // 4. Update UI
     _notifyListeners();
   }
 

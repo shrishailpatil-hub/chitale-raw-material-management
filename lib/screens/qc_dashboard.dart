@@ -5,6 +5,7 @@ import '../services/qc_service.dart';
 import 'qc_scan_batch_screen.dart';
 import 'pending_qc_screen.dart';
 import 'qc_history_screen.dart';
+import 'loginpage.dart'; // ✅ Required
 
 class QCDashboard extends StatelessWidget {
   const QCDashboard({super.key});
@@ -164,8 +165,7 @@ class QCDashboard extends StatelessWidget {
                         content: const Text("Are you sure you want to logout?"),
                         actions: [
                           TextButton(
-                            onPressed: () =>
-                                Navigator.pop(dialogContext, false),
+                            onPressed: () => Navigator.pop(dialogContext, false),
                             child: const Text("Cancel"),
                           ),
                           TextButton(
@@ -180,7 +180,13 @@ class QCDashboard extends StatelessWidget {
                     );
 
                     if (shouldLogout == true) {
-                      Navigator.pop(context);
+                      if (!context.mounted) return;
+                      // ✅ FIX: This line prevents the black screen
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                            (route) => false,
+                      );
                     }
                   },
                 ),
