@@ -92,7 +92,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const SizedBox(height: 30),
 
               // ---------------- ACTIONS ----------------
-              const Text("Quick Actions", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
+              const Text("Flash Actions", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
 
               GridView.count(
@@ -116,11 +116,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   _actionCard(
                     icon: Icons.outbox,
                     label: "Issue Material",
-                    onTap: () {
-                      // TODO: Create IssueMaterialScreen
-                      // _navigate(const IssueMaterialScreen());
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming in Phase 2")));
-                    },
+                    onTap: () => _navigate(const IssueMaterialScreen()),
                   ),
                   _actionCard(
                     icon: Icons.logout,

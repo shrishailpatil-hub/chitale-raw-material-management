@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../models/batch.dart';
-import '../services/database_helper.dart'; // ✅ Uses Database now
+import '../services/database_helper.dart';
 
 class InboundEntryScreen extends StatefulWidget {
   const InboundEntryScreen({super.key});
@@ -14,25 +14,27 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
   final _vendorController = TextEditingController();
   final _vehicleController = TextEditingController();
   final _dateController = TextEditingController();
-  final _materialController = TextEditingController();
   final _batchController = TextEditingController();
   final _mfgDateController = TextEditingController();
   final _expDateController = TextEditingController();
   final _totalQtyController = TextEditingController();
   final _sampleQtyController = TextEditingController();
 
+  // ✅ New Dropdown State
+  List<Map<String, dynamic>> materials = [];
+  String? selectedMaterial;
+
   @override
-  void dispose() {
-    _vendorController.dispose();
-    _vehicleController.dispose();
-    _dateController.dispose();
-    _materialController.dispose();
-    _batchController.dispose();
-    _mfgDateController.dispose();
-    _expDateController.dispose();
-    _totalQtyController.dispose();
-    _sampleQtyController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadMaterials();
+  }
+
+  void _loadMaterials() async {
+    final data = await DatabaseHelper.instance.getMaterials();
+    setState(() {
+      materials = data;
+    });
   }
 
   @override
@@ -58,7 +60,16 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
             const SizedBox(height: 24),
             _sectionTitle('Batch Details'),
             _card(children: [
-              _input('Material', _materialController),
+              // ✅ DROPDOWN REPLACES TEXT FIELD
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(labelText: 'Material', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                value: selectedMaterial,
+                style: TextStyle(color: Colors.black),
+                items: materials.map((m) {
+                  return DropdownMenuItem<String>(value: m['name'], child: Text(m['name']));
+                }).toList(),
+                onChanged: (val) => setState(() => selectedMaterial = val),
+              ),
               const SizedBox(height: 12),
               _input('Batch No', _batchController),
               const SizedBox(height: 12),
@@ -90,24 +101,19 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
     );
   }
 
-  // ---------------- LOGIC ----------------
-
   void _onGeneratePressed() async {
-    if (_materialController.text.isEmpty || _batchController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter Material Name and Batch No'), backgroundColor: Colors.red));
+    // ✅ Check Dropdown
+    if (selectedMaterial == null || _batchController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select Material and enter Batch No'), backgroundColor: Colors.red));
       return;
     }
 
-    // Parse Numbers
     double totalQty = double.tryParse(_totalQtyController.text) ?? 0.0;
-
-    // Generate GRN
     final randomId = Random().nextInt(9000) + 1000;
     final generatedGRN = 'GRN-2025-$randomId';
 
-    // Create Batch
     final newBatch = Batch(
-      material: _materialController.text,
+      material: selectedMaterial!, // ✅ Uses Standard Name
       batchNo: _batchController.text,
       vendor: _vendorController.text,
       grn: generatedGRN,
@@ -120,7 +126,6 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
       unit: 'Kg',
     );
 
-    // ✅ SAVE TO SQLITE DATABASE
     await DatabaseHelper.instance.insertBatch(newBatch.toMap());
 
     if (mounted) {
@@ -143,9 +148,16 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
     }
   }
 
-  // ---------------- UI Helpers ----------------
   Widget _sectionTitle(String text) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Align(alignment: Alignment.centerLeft, child: Text(text, style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700))));
   Widget _card({required List<Widget> children}) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(children: children));
-  Widget _input(String label, TextEditingController controller, {bool isNumber = false}) => TextField(controller: controller, keyboardType: isNumber ? TextInputType.number : TextInputType.text, decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))));
-  Widget _dateInput(String label, TextEditingController controller) => TextField(controller: controller, readOnly: true, decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), suffixIcon: const Icon(Icons.calendar_today)), onTap: () async { DateTime? date = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2035), initialDate: DateTime.now()); if (date != null) controller.text = '${date.day}/${date.month}/${date.year}'; });
+  Widget _input(String label, TextEditingController controller, {bool isNumber = false}) => TextField(
+    controller: controller,
+    style: const TextStyle(color: Colors.black), // 👈 THIS MAKES TEXT BLACK
+    keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+    decoration: InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+  );
+  Widget _dateInput(String label, TextEditingController controller) => TextField(controller: controller, style: const TextStyle(color: Colors.black),readOnly: true, decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), suffixIcon: const Icon(Icons.calendar_today)), onTap: () async { DateTime? date = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2035), initialDate: DateTime.now()); if (date != null) controller.text = '${date.day}/${date.month}/${date.year}'; });
 }

@@ -1,80 +1,91 @@
 import 'package:flutter/foundation.dart';
 import '../models/batch.dart';
 import '../models/qc_record.dart';
+import '../services/database_helper.dart';
 
 class QCService {
   static final QCService _instance = QCService._internal();
   factory QCService() => _instance;
 
   QCService._internal() {
-    // Initialize Notifiers
-    pendingBatchesNotifier.value = List.from(_pendingBatches);
-    qcHistoryNotifier.value = List.from(_qcHistory);
+    refreshPendingList();
+    _loadHistory();
   }
 
-  final List<Batch> _pendingBatches = [];
-  final List<QCRecord> _qcHistory = [];
-
-  // ✅ TWO NOTIFIERS NOW
   final ValueNotifier<List<Batch>> pendingBatchesNotifier = ValueNotifier([]);
   final ValueNotifier<List<QCRecord>> qcHistoryNotifier = ValueNotifier([]);
 
-  List<Batch> get pendingBatches => List.unmodifiable(_pendingBatches);
-  List<QCRecord> get qcHistory => List.unmodifiable(_qcHistory);
+  // ✅ FIX: Add this Getter so the UI can read the list directly
+  List<QCRecord> get qcHistory => qcHistoryNotifier.value;
 
-  void addBatchForQC(Batch batch) {
-    _pendingBatches.add(batch);
-    _notifyListeners();
+  // ---------------- ACTIONS ----------------
+
+  Future<void> refreshPendingList() async {
+    final allBatches = await DatabaseHelper.instance.getAllBatches();
+
+    final pending = allBatches
+        .map((map) => Batch.fromMap(map))
+        .where((b) => b.status == BatchStatus.newBatch || b.status == BatchStatus.onHold)
+        .toList();
+
+    pendingBatchesNotifier.value = pending;
   }
 
-  void submitQC({
+  void addBatchForQC(Batch batch) {
+    refreshPendingList();
+  }
+
+  Future<void> submitQC({
     required Batch batch,
     required QCStatus status,
     required String remarks,
     required String reviewedBy,
     Map<String, dynamic>? parameters,
-  }) {
-    print("📢 QCService: Submitting QC for ${batch.batchNo} - Status: $status");
+  }) async {
 
-    // ---------------------------------------------------------
-    // ✅ THE MISSING LINK: Update the actual Batch object!
-    // ---------------------------------------------------------
-    if (status == QCStatus.approved) {
-      batch.status = BatchStatus.approved;
-    } else if (status == QCStatus.rejected) {
-      batch.status = BatchStatus.rejected;
-    } else if (status == QCStatus.onHold) {
-      batch.status = BatchStatus.onHold;
-    }
-
-    // 1. Create the History Record
     final record = QCRecord(
       batch: batch,
       status: status,
       remarks: remarks,
       reviewedBy: reviewedBy,
       timestamp: DateTime.now(),
-      parameters: parameters ?? {},
+      parameters: parameters ?? {}, // ✅ Pass parameters safely
     );
 
-    // 2. HANDLE PENDING LIST LOGIC
-    if (status == QCStatus.onHold) {
-      // Keep in list (we already updated batch.status above)
-    } else {
-      // Remove from Pending if Approved or Rejected
-      _pendingBatches.removeWhere((b) => b.batchNo == batch.batchNo);
-    }
+    String dbStatus = status.name;
 
-    // 3. Add to History
-    _qcHistory.add(record);
+    await DatabaseHelper.instance.updateBatchStatus(
+        batch.batchNo,
+        dbStatus
+    );
 
-    // 4. Update UI
-    _notifyListeners();
+    await DatabaseHelper.instance.insertQCRecord(record.toMap());
+
+    await refreshPendingList();
+    await _loadHistory();
   }
 
-  void _notifyListeners() {
-    // Update BOTH notifiers
-    pendingBatchesNotifier.value = List.from(_pendingBatches);
-    qcHistoryNotifier.value = List.from(_qcHistory);
+  Future<void> _loadHistory() async {
+    final recordsData = await DatabaseHelper.instance.getQCRecords();
+
+    List<QCRecord> history = [];
+
+    for (var row in recordsData) {
+      final batchMap = await DatabaseHelper.instance.getBatch(row['batchNo']);
+      if (batchMap != null) {
+        final batch = Batch.fromMap(batchMap);
+
+        history.add(QCRecord(
+          batch: batch,
+          status: QCStatus.values.firstWhere((e) => e.name == row['status']),
+          remarks: row['remarks'],
+          reviewedBy: row['reviewedBy'],
+          timestamp: DateTime.parse(row['timestamp']),
+          // Parameters default to empty map in model
+        ));
+      }
+    }
+
+    qcHistoryNotifier.value = history;
   }
 }

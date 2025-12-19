@@ -72,11 +72,12 @@ class _LoginUIState extends State<LoginUI> {
                   children: [
                     const Text(
                       'SECURE LOGIN',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w300),
+                      style: TextStyle(fontSize: 22, color: Colors.black,fontWeight: FontWeight.w300),
                     ),
                     const SizedBox(height: 30),
                     TextField(
                       controller: usernameController,
+                      style: TextStyle(color: Colors.black),
                       decoration: const InputDecoration(
                         labelText: 'Username',
                         border: OutlineInputBorder(),
@@ -86,6 +87,7 @@ class _LoginUIState extends State<LoginUI> {
                     const SizedBox(height: 20),
                     TextField(
                       controller: passwordController,
+                      style: TextStyle(color: Colors.black),
                       obscureText: true,
                       decoration: const InputDecoration(
                         labelText: 'Password',

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../models/batch.dart';
+import '../services/database_helper.dart';
+import 'scanner_screen.dart';
 
 class IssueMaterialScreen extends StatefulWidget {
   const IssueMaterialScreen({super.key});
@@ -8,28 +11,48 @@ class IssueMaterialScreen extends StatefulWidget {
 }
 
 class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
-  // -------- MOCK DATA (Phase 1) --------
-  final String requestId = '#REQ-Kitchen-882';
-  final String department = 'Central Kitchen';
-  final String material = 'Sugar (Fine Grade)';
-  final double requiredQty = 15.0;
+  // State
+  List<Map<String, dynamic>> materials = [];
+  String? selectedMaterial;
 
-  final String fefoShelf = 'SHELF B-04';
-  final String fefoBatch = '#2025-10-28-01';
-  final String expiryDate = '28/04/2025';
-  final double availableQty = 25.0;
+  Batch? fefoBatch; // The batch the system Suggests
+  Batch? scannedBatch; // The batch the user Actually scanned
 
-  // -------- STATE --------
-  String? scannedShelf;
-  final TextEditingController issueQtyController =
-  TextEditingController(text: '15.0');
-
-  bool get isFefoMatch => scannedShelf == fefoShelf;
+  final _qtyController = TextEditingController();
+  bool isLoading = false;
 
   @override
-  void dispose() {
-    issueQtyController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadMaterials();
+  }
+
+  // 1. Load Material Dropdown
+  void _loadMaterials() async {
+    final data = await DatabaseHelper.instance.getMaterials();
+    setState(() {
+      materials = data;
+    });
+  }
+
+  // 2. Find FEFO Batch when material changes
+  void _onMaterialSelected(String? val) async {
+    setState(() {
+      selectedMaterial = val;
+      fefoBatch = null;
+      scannedBatch = null;
+      isLoading = true;
+    });
+
+    if (val != null) {
+      final batches = await DatabaseHelper.instance.getBatchesForMaterial(val);
+      if (batches.isNotEmpty) {
+        setState(() {
+          fefoBatch = batches.first; // The oldest one
+        });
+      }
+    }
+    setState(() => isLoading = false);
   }
 
   @override
@@ -38,209 +61,245 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C4175),
-        title: const Text(
-          'Issue Material',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
+        title: const Text('Issue Material (FEFO)', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          children: [
-            _darkSection(
-              title: 'Order Fulfillment Details',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _kv('Request ID', requestId),
-                  _kv('Department', department),
-                  _kv('Material', material),
-                  _kv('Required Qty', '$requiredQty Kg'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            _darkSection(
-              title: 'FEFO Recommendation',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _kv('Target Shelf', fefoShelf),
-                  _kv('Batch', fefoBatch),
-                  _kv('Expiry Date', expiryDate),
-                  _kv('Available Qty', '$availableQty Kg'),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'Expiring Soon',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            /// Scan Shelf QR
-            ElevatedButton.icon(
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text(
-                'Scan Shelf QR',
-                style: TextStyle(fontSize: 18),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7CCC),
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: _scanShelf,
-            ),
-
-            if (scannedShelf != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                'Scanned Shelf: $scannedShelf',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isFefoMatch ? Colors.green : Colors.red,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 20),
-
-            _darkSection(
-              title: 'Confirm Issue Quantity',
-              child: TextField(
-                controller: issueQtyController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Issuing Now (Kg)',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white38),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                  _canConfirm() ? const Color(0xFF2E7CCC) : Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: _canConfirm() ? _confirmIssue : null,
-                child: const Text(
-                  'CONFIRM ISSUE',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---------------- UI HELPERS ----------------
-
-  Widget _darkSection({required String title, required Widget child}) {
-    return Card(
-      color: const Color(0xFF1F1F1F),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+            // DROPDOWN
+            const Text("Select Material to Issue:", style: TextStyle(fontSize: 16,color: Colors.black ,fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  hint: const Text("Choose Material"),
+                  value: selectedMaterial,
+                  style: TextStyle(color: Colors.black),
+                  items: materials.map((m) {
+                    return DropdownMenuItem<String>(
+                      value: m['name'],
+                      child: Text(m['name']),
+                    );
+                  }).toList(),
+                  onChanged: _onMaterialSelected,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            child,
+
+            const SizedBox(height: 20),
+
+            // FEFO SUGGESTION CARD
+            if (fefoBatch != null)
+              _infoCard(
+                title: "Recommended Batch (FEFO)",
+                color: Colors.blue.shade50,
+                borderColor: Colors.blue,
+                icon: Icons.lightbulb,
+                children: [
+                  Text("Batch: ${fefoBatch!.batchNo}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text("Expiry: ${fefoBatch!.expDate}", style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  Text("Location: ${fefoBatch!.shelfLocation ?? 'Unknown'}", style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text("Available: ${fefoBatch!.currentQty} ${fefoBatch!.unit}"),
+                ],
+              )
+            else if (selectedMaterial != null && !isLoading)
+              _infoCard(
+                title: "Out of Stock",
+                color: Colors.red.shade50,
+                borderColor: Colors.red,
+                icon: Icons.warning,
+                children: [const Text("No approved batches found for this material.",style: TextStyle(color: Colors.black))],
+
+              ),
+
+            const SizedBox(height: 20),
+
+            // SCAN SECTION
+            if (fefoBatch != null) ...[
+              const Divider(),
+              const SizedBox(height: 10),
+
+              // SCAN BUTTON OR RESULT
+              if (scannedBatch == null)
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text("SCAN BATCH TO PICK"),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1C4175)),
+                    onPressed: _scanBatch,
+                  ),
+                )
+              else
+                _buildScanResult(),
+            ]
           ],
         ),
       ),
     );
   }
 
-  Widget _kv(String key, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        '$key: $value',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
+  Widget _buildScanResult() {
+    bool isMatch = scannedBatch!.batchNo == fefoBatch!.batchNo;
+
+    return Column(
+      children: [
+        _infoCard(
+          title: isMatch ? "Batch Verified" : "⚠️ Batch Mismatch (Not Oldest)",
+          color: isMatch ? Colors.green.shade50 : Colors.orange.shade50,
+          borderColor: isMatch ? Colors.green : Colors.orange,
+          icon: isMatch ? Icons.check_circle : Icons.warning_amber,
+          children: [
+            Text("Scanned: ${scannedBatch!.batchNo}", style: const TextStyle(fontSize: 18,color: Colors.black ,fontWeight: FontWeight.bold)),
+            Text("Available: ${scannedBatch!.currentQty} ${scannedBatch!.unit}"),
+            if (!isMatch)
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: Text("You are not picking the oldest batch. Manager approval required.", style: TextStyle(color: Colors.red, fontSize: 12)),
+              ),
+          ],
         ),
-      ),
+
+        const SizedBox(height: 20),
+
+        // ISSUE QTY INPUT
+        TextField(
+          controller: _qtyController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: "Quantity to Issue",
+            border: OutlineInputBorder(),
+            suffixText: "Kg", // Hardcoded unit for now
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // CONFIRM BUTTON
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isMatch ? const Color(0xFF2E7CCC) : Colors.orange,
+            ),
+            onPressed: () => _confirmIssue(isMatch),
+            child: Text(
+              isMatch ? "CONFIRM ISSUE" : "REQUEST OVERRIDE & ISSUE",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   // ---------------- LOGIC ----------------
 
-  void _scanShelf() {
-    // MOCK scan – replace with real QR later
-    setState(() {
-      scannedShelf = 'SHELF B-04';
-    });
+  void _scanBatch() async {
+    final code = await Navigator.push<String>(context, MaterialPageRoute(builder: (_) => const ScannerScreen()));
+
+    if (code != null) {
+      final batchData = await DatabaseHelper.instance.getBatch(code);
+      if (batchData != null) {
+        final batch = Batch.fromMap(batchData);
+
+        // Basic Validations
+        if (batch.material != selectedMaterial) {
+          _showError("Wrong Material! This is ${batch.material}");
+          return;
+        }
+        if (batch.status != BatchStatus.approved) {
+          _showError("This batch is NOT Approved (Status: ${batch.status.name})");
+          return;
+        }
+
+        setState(() {
+          scannedBatch = batch;
+        });
+      } else {
+        _showError("Batch not found in database.");
+      }
+    }
   }
 
-  bool _canConfirm() {
-    final qty = double.tryParse(issueQtyController.text) ?? 0;
-    return scannedShelf != null &&
-        isFefoMatch &&
-        qty > 0 &&
-        qty <= requiredQty &&
-        qty <= availableQty;
+  void _confirmIssue(bool isMatch) async {
+    double qty = double.tryParse(_qtyController.text) ?? 0;
+
+    if (qty <= 0) {
+      _showError("Enter a valid quantity");
+      return;
+    }
+    if (qty > scannedBatch!.currentQty) {
+      _showError("Not enough stock! Max available: ${scannedBatch!.currentQty}");
+      return;
+    }
+
+    // IF MISMATCH -> ASK FOR PIN
+    if (!isMatch) {
+      bool approved = await _showManagerOverrideDialog();
+      if (!approved) return;
+    }
+
+    // UPDATE DB
+    await DatabaseHelper.instance.issueBatchQty(scannedBatch!.batchNo, qty);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Issued $qty Kg successfully!")));
+      Navigator.pop(context); // Go back to dashboard
+    }
   }
 
-  void _confirmIssue() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Material issued successfully (mock)'),
+  Future<bool> _showManagerOverrideDialog() async {
+    final pinController = TextEditingController();
+    return await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Manager Override"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Please enter Manager PIN to bypass FEFO rules."),
+            TextField(controller: pinController, obscureText: true, decoration: const InputDecoration(labelText: "PIN")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          ElevatedButton(
+              onPressed: () {
+                if (pinController.text == "1234") {
+                  Navigator.pop(ctx, true);
+                } else {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Wrong PIN"), backgroundColor: Colors.red));
+                }
+              },
+              child: const Text("Approve")
+          ),
+        ],
       ),
+    ) ?? false;
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+  }
+
+  Widget _infoCard({required String title, required Color color, required Color borderColor, required IconData icon, required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12), border: Border.all(color: borderColor)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(icon, color: borderColor), const SizedBox(width: 8), Text(title, style: TextStyle(color: borderColor, fontWeight: FontWeight.bold, fontSize: 16))]),
+        const Divider(),
+        ...children,
+      ]),
     );
-    Navigator.pop(context);
   }
 }

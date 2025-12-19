@@ -1,28 +1,32 @@
 import 'batch.dart';
 
-enum QCStatus {
-  approved,
-  onHold,
-  rejected,
-}
+enum QCStatus { approved, onHold, rejected }
 
 class QCRecord {
   final Batch batch;
   final QCStatus status;
   final String remarks;
-  final DateTime timestamp;
   final String reviewedBy;
+  final DateTime timestamp;
+  final Map<String, dynamic> parameters; // ✅ Kept this
 
-  /// Future-proof parameters:
-  /// temperature, humidity, pH, moisture, etc.
-  final Map<String, dynamic> parameters;
-
-  const QCRecord({
+  QCRecord({
     required this.batch,
     required this.status,
     required this.remarks,
-    required this.timestamp,
     required this.reviewedBy,
-    required this.parameters,
+    required this.timestamp,
+    this.parameters = const {}, // ✅ Added default empty value (Fixes Error)
   });
+
+  // Convert to Map for Database
+  Map<String, dynamic> toMap() {
+    return {
+      'batchNo': batch.batchNo,
+      'status': status.name,
+      'remarks': remarks,
+      'reviewedBy': reviewedBy,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
 }

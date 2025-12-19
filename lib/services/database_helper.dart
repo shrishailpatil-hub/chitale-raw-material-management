@@ -1,6 +1,7 @@
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart' hide Batch; // ✅ FIX: Hides the conflict
 import 'package:path/path.dart';
 import '../models/user.dart';
+import '../models/batch.dart'; // ✅ Ensure this import exists
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -50,7 +51,8 @@ CREATE TABLE batches (
   shelfLocation TEXT,
   initialQty $realType,
   currentQty $realType,
-  unit TEXT NOT NULL
+  unit TEXT NOT NULL,
+  sampleQty TEXT
 )
 ''');
 
@@ -79,81 +81,104 @@ CREATE TABLE materials (
 
     print("📦 Database Created Successfully");
 
-    // ✅ SEED DEFAULT DATA
-    // Users
+    // Seed Data
     await db.insert('users', {'username': 'arun', 'password': '123', 'role': 'ADMIN', 'name': 'Arun Jadhav'});
     await db.insert('users', {'username': 'aditi', 'password': '123', 'role': 'QC', 'name': 'Aditi Kadam'});
-
-    // Materials
     await db.insert('materials', {'name': 'Sugar (Fine Grade)', 'standardQtyPerPallet': 50.0, 'unit': 'Kg'});
     await db.insert('materials', {'name': 'Cashew Nuts (W320)', 'standardQtyPerPallet': 25.0, 'unit': 'Kg'});
     await db.insert('materials', {'name': 'Buffalo Milk', 'standardQtyPerPallet': 100.0, 'unit': 'L'});
   }
 
-  // ---------------- METHODS ----------------
-
+  // ---------------- AUTH METHODS ----------------
   Future<User?> login(String username, String password) async {
     final db = await instance.database;
-    final maps = await db.query(
-      'users',
-      where: 'username = ? AND password = ?',
-      whereArgs: [username, password],
-    );
-
-    if (maps.isNotEmpty) {
-      return User.fromMap(maps.first);
-    } else {
-      return null;
-    }
+    final maps = await db.query('users', where: 'username = ? AND password = ?', whereArgs: [username, password]);
+    if (maps.isNotEmpty) return User.fromMap(maps.first);
+    return null;
   }
 
-  // Basic Batch Insert (We will expand this later)
+  // ---------------- INVENTORY METHODS ----------------
   Future<void> insertBatch(Map<String, dynamic> row) async {
     final db = await instance.database;
     await db.insert('batches', row, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  // Find Batch
   Future<Map<String, dynamic>?> getBatch(String batchNo) async {
     final db = await instance.database;
     final maps = await db.query('batches', where: 'batchNo = ?', whereArgs: [batchNo]);
     if (maps.isNotEmpty) return maps.first;
     return null;
   }
-  // ---------------- DASHBOARD STATS ----------------
 
+  // ✅ This fixes the "getMaterials not defined" error
+  Future<List<Map<String, dynamic>>> getMaterials() async {
+    final db = await instance.database;
+    return await db.query('materials');
+  }
+
+  // ✅ This fixes the "getBatchesForMaterial" error
+  Future<List<Batch>> getBatchesForMaterial(String materialName) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'batches',
+      where: 'material = ? AND status = ? AND currentQty > 0',
+      whereArgs: [materialName, 'approved'],
+      orderBy: 'expDate ASC', // FEFO
+    );
+    // This line was crashing before because of the naming conflict
+    return result.map((json) => Batch.fromMap(json)).toList();
+  }
+
+  // ✅ This fixes the "issueBatchQty" requirement
+  Future<void> issueBatchQty(String batchNo, double issueQty) async {
+    final db = await instance.database;
+    final batchMap = await getBatch(batchNo);
+    if (batchMap == null) return;
+
+    double current = batchMap['currentQty'];
+    double newQty = current - issueQty;
+
+    await db.update(
+      'batches',
+      {'currentQty': newQty < 0 ? 0 : newQty},
+      where: 'batchNo = ?',
+      whereArgs: [batchNo],
+    );
+  }
+
+  // ---------------- STATS & OTHERS ----------------
   Future<Map<String, int>> getAdminStats() async {
     final db = await instance.database;
+    final putAwayCount = Sqflite.firstIntValue(await db.rawQuery("SELECT COUNT(*) FROM batches WHERE status = 'approved' AND (shelfLocation IS NULL OR shelfLocation = '')")) ?? 0;
+    final pendingQcCount = Sqflite.firstIntValue(await db.rawQuery("SELECT COUNT(*) FROM batches WHERE status = 'newBatch' OR status = 'onHold'")) ?? 0;
+    final lowStockCount = Sqflite.firstIntValue(await db.rawQuery("SELECT COUNT(*) FROM batches WHERE initialQty > 0 AND (currentQty / initialQty) < 0.2")) ?? 0;
+    final totalCount = Sqflite.firstIntValue(await db.rawQuery("SELECT COUNT(*) FROM batches")) ?? 0;
 
-    // 1. Pending Put-away (Approved but NO shelf assigned)
-    final putAwayCount = Sqflite.firstIntValue(await db.rawQuery('''
-      SELECT COUNT(*) FROM batches 
-      WHERE status = 'approved' AND (shelfLocation IS NULL OR shelfLocation = '')
-    ''')) ?? 0;
+    return {'putAway': putAwayCount, 'pendingQC': pendingQcCount, 'lowStock': lowStockCount, 'total': totalCount};
+  }
 
-    // 2. Pending QC (New or On Hold)
-    final pendingQcCount = Sqflite.firstIntValue(await db.rawQuery('''
-      SELECT COUNT(*) FROM batches 
-      WHERE status = 'newBatch' OR status = 'onHold'
-    ''')) ?? 0;
+  Future<List<Map<String, dynamic>>> getAllBatches() async {
+    final db = await instance.database;
+    return await db.query('batches');
+  }
 
-    // 3. Low Stock (Less than 20% remaining)
-    // Note: We avoid division by zero
-    final lowStockCount = Sqflite.firstIntValue(await db.rawQuery('''
-      SELECT COUNT(*) FROM batches 
-      WHERE initialQty > 0 AND (currentQty / initialQty) < 0.2
-    ''')) ?? 0;
+  Future<void> updateBatchStatus(String batchNo, String status, {String? shelf}) async {
+    final db = await instance.database;
+    Map<String, dynamic> values = {'status': status};
+    if (shelf != null) values['shelfLocation'] = shelf;
+    await db.update('batches', values, where: 'batchNo = ?', whereArgs: [batchNo]);
+  }
+  // ---------------- QC HISTORY METHODS ----------------
 
-    // 4. Total Batches (Active)
-    final totalCount = Sqflite.firstIntValue(await db.rawQuery('''
-      SELECT COUNT(*) FROM batches
-    ''')) ?? 0;
+  // ✅ Fixes "insertQCRecord" error
+  Future<void> insertQCRecord(Map<String, dynamic> row) async {
+    final db = await instance.database;
+    await db.insert('qc_records', row);
+  }
 
-    return {
-      'putAway': putAwayCount,
-      'pendingQC': pendingQcCount,
-      'lowStock': lowStockCount,
-      'total': totalCount,
-    };
+  // ✅ Fixes "getQCRecords" error
+  Future<List<Map<String, dynamic>>> getQCRecords() async {
+    final db = await instance.database;
+    return await db.query('qc_records', orderBy: 'timestamp DESC');
   }
 }
