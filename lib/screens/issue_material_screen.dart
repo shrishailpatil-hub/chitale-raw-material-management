@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/batch.dart';
 import '../services/database_helper.dart';
+import '../models/user.dart'; // Import User
 import 'scanner_screen.dart';
+import 'manager_override_screen.dart'; // Import Override Screen
 
 class IssueMaterialScreen extends StatefulWidget {
   const IssueMaterialScreen({super.key});
@@ -27,7 +29,6 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
     _loadMaterials();
   }
 
-  // 1. Load Material Dropdown
   void _loadMaterials() async {
     final data = await DatabaseHelper.instance.getMaterials();
     setState(() {
@@ -35,7 +36,6 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
     });
   }
 
-  // 2. Find FEFO Batch when material changes
   void _onMaterialSelected(String? val) async {
     setState(() {
       selectedMaterial = val;
@@ -69,7 +69,7 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // DROPDOWN
-            const Text("Select Material to Issue:", style: TextStyle(fontSize: 16,color: Colors.black ,fontWeight: FontWeight.bold)),
+            const Text("Select Material to Issue:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -79,11 +79,10 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
                   isExpanded: true,
                   hint: const Text("Choose Material"),
                   value: selectedMaterial,
-                  style: TextStyle(color: Colors.black),
                   items: materials.map((m) {
                     return DropdownMenuItem<String>(
                       value: m['name'],
-                      child: Text(m['name']),
+                      child: Text(m['name'], style: const TextStyle(color: Colors.black)),
                     );
                   }).toList(),
                   onChanged: _onMaterialSelected,
@@ -98,13 +97,14 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
               _infoCard(
                 title: "Recommended Batch (FEFO)",
                 color: Colors.blue.shade50,
-                borderColor: Colors.blue,
+                borderColor: Colors.blue.shade800, // Darker border
                 icon: Icons.lightbulb,
+                textColor: Colors.blue.shade900,   // Dark Text
                 children: [
-                  Text("Batch: ${fefoBatch!.batchNo}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text("Batch: ${fefoBatch!.batchNo}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
                   Text("Expiry: ${fefoBatch!.expDate}", style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  Text("Location: ${fefoBatch!.shelfLocation ?? 'Unknown'}", style: const TextStyle(fontWeight: FontWeight.w500)),
-                  Text("Available: ${fefoBatch!.currentQty} ${fefoBatch!.unit}"),
+                  Text("Location: ${fefoBatch!.shelfLocation ?? 'Unknown'}", style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black87)),
+                  Text("Available: ${fefoBatch!.currentQty} ${fefoBatch!.unit}", style: const TextStyle(color: Colors.black)),
                 ],
               )
             else if (selectedMaterial != null && !isLoading)
@@ -113,8 +113,10 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
                 color: Colors.red.shade50,
                 borderColor: Colors.red,
                 icon: Icons.warning,
-                children: [const Text("No approved batches found for this material.",style: TextStyle(color: Colors.black))],
-
+                textColor: Colors.red.shade900,
+                children: [
+                  const Text("No approved batches found for this material.", style: TextStyle(color: Colors.black)),
+                ],
               ),
 
             const SizedBox(height: 20),
@@ -124,7 +126,6 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
               const Divider(),
               const SizedBox(height: 10),
 
-              // SCAN BUTTON OR RESULT
               if (scannedBatch == null)
                 SizedBox(
                   width: double.infinity,
@@ -153,15 +154,16 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
         _infoCard(
           title: isMatch ? "Batch Verified" : "⚠️ Batch Mismatch (Not Oldest)",
           color: isMatch ? Colors.green.shade50 : Colors.orange.shade50,
-          borderColor: isMatch ? Colors.green : Colors.orange,
+          borderColor: isMatch ? Colors.green.shade800 : Colors.orange.shade800,
           icon: isMatch ? Icons.check_circle : Icons.warning_amber,
+          textColor: isMatch ? Colors.green.shade900 : Colors.deepOrange.shade900, // High Contrast
           children: [
-            Text("Scanned: ${scannedBatch!.batchNo}", style: const TextStyle(fontSize: 18,color: Colors.black ,fontWeight: FontWeight.bold)),
-            Text("Available: ${scannedBatch!.currentQty} ${scannedBatch!.unit}"),
+            Text("Scanned: ${scannedBatch!.batchNo}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+            Text("Available: ${scannedBatch!.currentQty} ${scannedBatch!.unit}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
             if (!isMatch)
               const Padding(
                 padding: EdgeInsets.only(top: 8.0),
-                child: Text("You are not picking the oldest batch. Manager approval required.", style: TextStyle(color: Colors.red, fontSize: 12)),
+                child: Text("You are not picking the oldest batch. Manager approval required.", style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.bold)),
               ),
           ],
         ),
@@ -172,10 +174,12 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
         TextField(
           controller: _qtyController,
           keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.black),
           decoration: const InputDecoration(
             labelText: "Quantity to Issue",
             border: OutlineInputBorder(),
-            suffixText: "Kg", // Hardcoded unit for now
+            suffixText: "Kg",
+            labelStyle: TextStyle(color: Colors.black87),
           ),
         ),
 
@@ -210,7 +214,6 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
       if (batchData != null) {
         final batch = Batch.fromMap(batchData);
 
-        // Basic Validations
         if (batch.material != selectedMaterial) {
           _showError("Wrong Material! This is ${batch.material}");
           return;
@@ -232,74 +235,97 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
   void _confirmIssue(bool isMatch) async {
     double qty = double.tryParse(_qtyController.text) ?? 0;
 
+    // 🛑 VALIDATION 1: Valid Number
     if (qty <= 0) {
-      _showError("Enter a valid quantity");
+      _showError("Please enter a valid quantity greater than 0");
       return;
     }
+
+    // 🛑 VALIDATION 2: Strictly enforce Available Quantity
+    // We check against the SCANNED batch (the one we are issuing from)
     if (qty > scannedBatch!.currentQty) {
-      _showError("Not enough stock! Max available: ${scannedBatch!.currentQty}");
-      return;
+      _showError("⚠️ NOT ENOUGH STOCK!\nYou have ${scannedBatch!.currentQty} Kg available.");
+      return; // Stop right here. Do not proceed to override.
     }
 
-    // IF MISMATCH -> ASK FOR PIN
+    String? overrideReason;
+
+    // IF MISMATCH -> GO TO OVERRIDE SCREEN
     if (!isMatch) {
-      bool approved = await _showManagerOverrideDialog();
-      if (!approved) return;
+      final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => ManagerOverrideScreen(
+                materialName: scannedBatch!.material,
+                batchNo: scannedBatch!.batchNo,
+                qty: qty,
+              )
+          )
+      );
+
+      if (result == null || result['authorized'] != true) {
+        return; // Cancelled or Failed
+      }
+
+      overrideReason = result['reason'];
     }
 
-    // UPDATE DB
+    // 1. UPDATE STOCK (Deduct)
     await DatabaseHelper.instance.issueBatchQty(scannedBatch!.batchNo, qty);
+
+    // 2. SAVE OVERRIDE LOG (If applicable)
+    if (overrideReason != null) {
+      await DatabaseHelper.instance.insertOverrideLog({
+        'batchNo': scannedBatch!.batchNo,
+        'material': scannedBatch!.material,
+        'qtyRequested': qty,
+        'managerName': 'Manager (PIN)',
+        'reason': overrideReason,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Issued $qty Kg successfully!")));
-      Navigator.pop(context); // Go back to dashboard
+      Navigator.pop(context);
     }
-  }
-
-  Future<bool> _showManagerOverrideDialog() async {
-    final pinController = TextEditingController();
-    return await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Manager Override"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Please enter Manager PIN to bypass FEFO rules."),
-            TextField(controller: pinController, obscureText: true, decoration: const InputDecoration(labelText: "PIN")),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
-          ElevatedButton(
-              onPressed: () {
-                if (pinController.text == "1234") {
-                  Navigator.pop(ctx, true);
-                } else {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Wrong PIN"), backgroundColor: Colors.red));
-                }
-              },
-              child: const Text("Approve")
-          ),
-        ],
-      ),
-    ) ?? false;
   }
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
-  Widget _infoCard({required String title, required Color color, required Color borderColor, required IconData icon, required List<Widget> children}) {
+  // ✅ UPDATED INFO CARD (Dark Text on Light Background)
+  Widget _infoCard({
+    required String title,
+    required Color color,
+    required Color borderColor,
+    required IconData icon,
+    required Color textColor, // New Param for Text Color
+    required List<Widget> children
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12), border: Border.all(color: borderColor)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(icon, color: borderColor), const SizedBox(width: 8), Text(title, style: TextStyle(color: borderColor, fontWeight: FontWeight.bold, fontSize: 16))]),
-        const Divider(),
-        ...children,
-      ]),
+      decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor)
+      ),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+                children: [
+                  Icon(icon, color: borderColor),
+                  const SizedBox(width: 8),
+                  Text(title, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16))
+                ]
+            ),
+            Divider(color: borderColor.withOpacity(0.5)),
+            ...children,
+          ]
+      ),
     );
   }
 }

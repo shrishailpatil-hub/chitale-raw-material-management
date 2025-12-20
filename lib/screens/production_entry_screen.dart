@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import '../services/database_helper.dart';
 import '../models/batch.dart';
+import '../models/user.dart'; // ✅ Import User
 import 'scanner_screen.dart';
 
 class ProductionEntryScreen extends StatefulWidget {
-  final String workerName; // ✅ Accept Name
-  const ProductionEntryScreen({super.key, required this.workerName});
+  final User currentUser; // ✅ Accept User Object
+
+  const ProductionEntryScreen({super.key, required this.currentUser});
 
   @override
   State<ProductionEntryScreen> createState() => _ProductionEntryScreenState();
 }
 
 class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
-  // State
   List<Map<String, dynamic>> products = [];
   String? selectedProduct;
   final _finalBatchController = TextEditingController();
 
-  // List of raw materials added to this mix
   List<Map<String, dynamic>> addedIngredients = [];
 
   @override
@@ -34,7 +34,6 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
   }
 
   void _generateBatchId() {
-    // Auto-generate a batch ID for the finished good (e.g., FG-2025-999)
     final randomId = Random().nextInt(9000) + 1000;
     _finalBatchController.text = "FG-2025-$randomId";
   }
@@ -52,8 +51,14 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. PRODUCT DETAILS CARD
-            _sectionTitle("Finished Product Details"),
+            // ✅ Fixed Syntax Error Here
+            Text(
+              "Operator: ${widget.currentUser.name} (${widget.currentUser.username})",
+              style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+
+            _sectionTitle("1. Select Finished Product"),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
@@ -64,8 +69,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
                     style: const TextStyle(color: Colors.black, fontSize: 16),
                     icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                     decoration: InputDecoration(
-                        labelText: 'Select Product',
-                        labelStyle: const TextStyle(color: Colors.black54),
+                        labelText: 'Product Name',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
                     ),
                     value: selectedProduct,
@@ -82,8 +86,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
                     controller: _finalBatchController,
                     style: const TextStyle(color: Colors.black),
                     decoration: InputDecoration(
-                      labelText: 'Final Batch ID',
-                      labelStyle: const TextStyle(color: Colors.black54),
+                      labelText: 'Batch ID (Auto)',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -93,11 +96,10 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
 
             const SizedBox(height: 24),
 
-            // 2. INGREDIENTS LIST
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _sectionTitle("Raw Materials Used"),
+                _sectionTitle("2. Scan Ingredients"),
                 ElevatedButton.icon(
                   onPressed: _scanIngredient,
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
@@ -109,6 +111,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
 
             const SizedBox(height: 8),
 
+            // ✅ Fixed Syntax Error Here (Corrected logic flow)
             if (addedIngredients.isEmpty)
               Container(
                 padding: const EdgeInsets.all(20),
@@ -117,7 +120,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
                     border: Border.all(color: Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(12)
                 ),
-                child: const Center(child: Text("No ingredients scanned yet.", style: TextStyle(color: Colors.grey))),
+                child: const Center(child: Text("Scan raw material bags to add them here.", style: TextStyle(color: Colors.grey))),
               )
             else
               ListView.builder(
@@ -149,7 +152,6 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
 
             const SizedBox(height: 40),
 
-            // 3. SUBMIT BUTTON
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -172,14 +174,10 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
     );
   }
 
-  // ---------------- LOGIC ----------------
-
   void _scanIngredient() async {
-    // 1. Scan QR
     final code = await Navigator.push<String>(context, MaterialPageRoute(builder: (_) => const ScannerScreen()));
     if (code == null) return;
 
-    // 2. Lookup in DB
     final batchMap = await DatabaseHelper.instance.getBatch(code);
     if (batchMap == null) {
       _showError("Batch not found!");
@@ -188,7 +186,6 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
 
     final batch = Batch.fromMap(batchMap);
 
-    // 3. Check Logic (Must be Approved & Have Stock)
     if (batch.status != BatchStatus.approved) {
       _showError("Batch NOT Approved!");
       return;
@@ -198,7 +195,6 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
       return;
     }
 
-    // 4. Ask for Quantity
     _showQtyDialog(batch);
   }
 
@@ -245,23 +241,19 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
   }
 
   void _submitProduction() async {
-    // 1. Loop through ingredients and deduct stock + save log
     for (var item in addedIngredients) {
-      // 1. Deduct Stock
       await DatabaseHelper.instance.issueBatchQty(item['batchNo'], item['qty']);
 
-      // 2. Save Log with WORKER ID
       await DatabaseHelper.instance.insertProductionLog({
         'finalBatchNo': _finalBatchController.text,
         'productName': selectedProduct,
         'rawMaterialBatchNo': item['batchNo'],
         'qtyUsed': item['qty'],
         'timestamp': DateTime.now().toIso8601String(),
-        'workerId': widget.workerName, // SAVING THE LOG!
+        'workerId': widget.currentUser.username, // ✅ Fixed Usage
       });
     }
 
-    // 2. Show Success
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Production Logged Successfully!")));
       Navigator.pop(context);

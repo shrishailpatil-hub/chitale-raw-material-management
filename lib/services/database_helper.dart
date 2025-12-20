@@ -103,7 +103,17 @@ CREATE TABLE production_logs (
 ''');
 
 
-
+    await db.execute('''
+CREATE TABLE overrides (
+  id $idType,
+  batchNo TEXT NOT NULL,
+  material TEXT NOT NULL,
+  qtyRequested $realType,
+  managerName TEXT NOT NULL, 
+  reason TEXT NOT NULL,
+  timestamp TEXT NOT NULL
+)
+''');
 
     print("📦 Database Created Successfully");
 
@@ -111,9 +121,24 @@ CREATE TABLE production_logs (
     await db.insert('finished_goods', {'name': 'Kaju Katli (250g)', 'sku': 'FG-KK-250'});
     await db.insert('finished_goods', {'name': 'Dharwad Pedha', 'sku': 'FG-DP-500'});
     await db.insert('finished_goods', {'name': 'Mango Barfi', 'sku': 'FG-MB-200'});
-    await db.insert('users', {'username': 'arun', 'password': '123', 'role': 'ADMIN', 'name': 'Arun Jadhav'});
+    // 4-TIER ROLES (Scalable)
+
+    // 1. INBOUND MANAGERS
+    await db.insert('users', {'username': 'arun', 'password': '123', 'role': 'INBOUND', 'name': 'Arun Jadhav'});
+    await db.insert('users', {'username': 'nikhil', 'password': '123', 'role': 'INBOUND', 'name': 'Nikhil Naik'});
+
+    // 2. QC OFFICERS
     await db.insert('users', {'username': 'aditi', 'password': '123', 'role': 'QC', 'name': 'Aditi Kadam'});
-    await db.insert('users', {'username': 'ramesh', 'password': '123', 'role': 'WORKER', 'name': 'Ramesh Worker'});
+    await db.insert('users', {'username': 'sarthak', 'password': '123', 'role': 'QC', 'name': 'Sarthak Patil'});
+
+    // 3. WORKERS (On-Site)
+    await db.insert('users', {'username': 'ramesh', 'password': '123', 'role': 'WORKER', 'name': 'Ramesh (Line 1)'});
+    await db.insert('users', {'username': 'suresh', 'password': '123', 'role': 'WORKER', 'name': 'Suresh (Line 2)'});
+
+    // 4. SUPER ADMINS (Directors)
+    await db.insert('users', {'username': 'omkar', 'password': '123', 'role': 'SUPER_ADMIN', 'name': 'Omkar Marda'});
+    await db.insert('users', {'username': 'shrishail', 'password': '123', 'role': 'SUPER_ADMIN', 'name': 'Shrishail Patil'});
+
     await db.insert('materials', {'name': 'Sugar (Fine Grade)', 'standardQtyPerPallet': 50.0, 'unit': 'Kg'});
     await db.insert('materials', {'name': 'Cashew Nuts (W320)', 'standardQtyPerPallet': 25.0, 'unit': 'Kg'});
     await db.insert('materials', {'name': 'Buffalo Milk', 'standardQtyPerPallet': 100.0, 'unit': 'L'});
@@ -221,5 +246,39 @@ CREATE TABLE production_logs (
   Future<void> insertProductionLog(Map<String, dynamic> row) async {
     final db = await instance.database;
     await db.insert('production_logs', row);
+  }
+  // ---------------- TRACEABILITY REPORT ----------------
+
+  // Get list of all Finished Good batches produced
+  Future<List<Map<String, dynamic>>> getProductionHistory() async {
+    final db = await instance.database;
+    // We group by finalBatchNo to get unique production runs
+    return await db.rawQuery('''
+      SELECT finalBatchNo, productName, timestamp, workerId, COUNT(*) as ingredientCount 
+      FROM production_logs 
+      GROUP BY finalBatchNo 
+      ORDER BY timestamp DESC
+    ''');
+  }
+
+  // Get specific ingredients for a Finished Batch
+  Future<List<Map<String, dynamic>>> getIngredientsForBatch(String finalBatchNo) async {
+    final db = await instance.database;
+    return await db.query(
+      'production_logs',
+      where: 'finalBatchNo = ?',
+      whereArgs: [finalBatchNo],
+    );
+  }
+  // ---------------- AUDIT METHODS ----------------
+
+  Future<void> insertOverrideLog(Map<String, dynamic> row) async {
+    final db = await instance.database;
+    await db.insert('overrides', row);
+  }
+
+  Future<List<Map<String, dynamic>>> getOverrideLogs() async {
+    final db = await instance.database;
+    return await db.query('overrides', orderBy: 'timestamp DESC');
   }
 }

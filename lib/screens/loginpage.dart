@@ -1,3 +1,4 @@
+import 'package:chitalebandhu/screens/super_admin_dashboard.dart';
 import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
 import '../models/user.dart';
@@ -137,16 +138,18 @@ class _LoginUIState extends State<LoginUI> {
     setState(() => isLoading = false);
 
     if (user != null) {
-      if (user.role == 'ADMIN') {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminDashboard()));
+      if (user.role == 'SUPER_ADMIN') {
+        // Omkar
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SuperAdminDashboard()));
+      } else if (user.role == 'INBOUND') {
+        // Arun or Vijay (Pass the user object!)
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminDashboard(currentUser: user)));
       } else if (user.role == 'QC') {
+        // Aditi or Sneha
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const QCDashboard()));
       } else if (user.role == 'WORKER') {
-
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => WorkerDashboard(workerName: user.name))
-        );
+        // Ramesh or Suresh
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => WorkerDashboard(user: user)));
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

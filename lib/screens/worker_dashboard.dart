@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../models/user.dart'; // ✅ Import User Model
 import 'production_entry_screen.dart';
 import 'loginpage.dart';
 
 class WorkerDashboard extends StatelessWidget {
-  final String workerName;
-  const WorkerDashboard({super.key, required this.workerName});
+  final User user; // ✅ Store the Full User Object
+
+  const WorkerDashboard({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -25,23 +27,21 @@ class WorkerDashboard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // WELCOME TEXT
+            // Display Friendly Name
             Text(
-              "Hello, $workerName",
+              "Hello, ${user.name}",
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              "Select an action to begin",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            Text(
+              "ID: ${user.username}", // Show ID for verification
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
 
             const SizedBox(height: 50),
 
-            // BIG ACTION BUTTON
             SizedBox(
               width: double.infinity,
-              height: 160, // Massive button for easy clicking
+              height: 160,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7CCC),
@@ -57,8 +57,8 @@ class WorkerDashboard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      // Pass worker name so we can log it!
-                      builder: (_) => ProductionEntryScreen(workerName: workerName),
+                      // ✅ Pass the full User object to the next screen
+                      builder: (_) => ProductionEntryScreen(currentUser: user),
                     ),
                   );
                 },

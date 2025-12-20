@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
+import '../models/user.dart'; // ✅ Added Import
 import 'inbound_entry_screen.dart';
 import 'shelf_assign_screen.dart';
 import 'issue_material_screen.dart';
 import 'loginpage.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final User? currentUser; // ✅ Accept User
+  const AdminDashboard({super.key, this.currentUser});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  // Stats State
   Map<String, int> stats = {
     'putAway': 0,
     'pendingQC': 0,
@@ -28,7 +29,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _loadStats();
   }
 
-  // Reload stats whenever we come back to this screen
   void _loadStats() async {
     final newStats = await DatabaseHelper.instance.getAdminStats();
     if (mounted) {
@@ -41,17 +41,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // Refresh stats when pulling down or coming back
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C4175),
-        title: const Text('Operator Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('Inbound Manager', style: TextStyle(fontWeight: FontWeight.w800)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadStats, // Manual refresh
-          )
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadStats)
         ],
       ),
       body: RefreshIndicator(
@@ -63,14 +59,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ---------------- WELCOME ----------------
-              const Text(
-                "Welcome,\nArun Jadhav",
-                style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.w700),
+              Text(
+                "Welcome,\n${widget.currentUser?.name ?? 'Manager'}", // ✅ Dynamic Name
+                style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 20),
 
               // ---------------- LIVE STATS ----------------
-              const Text("Warehouse Overview", style: TextStyle(fontSize: 18,color: Colors.black , fontWeight: FontWeight.bold)),
+              const Text("Warehouse Overview", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
 
               Row(
@@ -92,7 +88,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const SizedBox(height: 30),
 
               // ---------------- ACTIONS ----------------
-              const Text("Flash Actions", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
+              const Text("Quick Actions", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
 
               GridView.count(
@@ -106,11 +102,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   _actionCard(
                     icon: Icons.add_box,
                     label: "Inbound Entry",
+                    textColor: const Color(0xFF1C4175),
                     onTap: () => _navigate(const InboundEntryScreen()),
                   ),
                   _actionCard(
                     icon: Icons.move_to_inbox,
                     label: "Shelf Assign",
+                    textColor: const Color(0xFF1C4175),
                     onTap: () => _navigate(const ShelfAssignScreen()),
                   ),
                   _actionCard(
@@ -121,6 +119,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   _actionCard(
                     icon: Icons.logout,
                     label: "Logout",
+                    textColor: Colors.red,
                     onTap: () async {
                       final shouldLogout = await showDialog<bool>(
                         context: context,
@@ -134,6 +133,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         ),
                       );
                       if (shouldLogout == true) {
+                        if (!context.mounted) return;
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -151,11 +151,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ---------------- HELPERS ----------------
-
   void _navigate(Widget screen) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-    _loadStats(); // Refresh stats when coming back
+    _loadStats();
   }
 
   Widget _statCard(String label, String value, Color color, IconData icon) {
@@ -188,7 +186,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _actionCard({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _actionCard({required IconData icon, required String label, required VoidCallback onTap, Color textColor = Colors.black}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -203,7 +201,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Icon(icon, size: 42, color: const Color(0xFF1C4175)),
             const SizedBox(height: 12),
-            Text(label, style: const TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold)),
+            Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
           ],
         ),
       ),
