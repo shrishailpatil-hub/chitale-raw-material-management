@@ -71,6 +71,97 @@ class _ProductionRunCardState extends State<_ProductionRunCard> {
     setState(() => expanded = !expanded);
   }
 
+  // ✅ NEW FUNCTION: Fetch & Show Batch Details
+  void _showBatchDetails(String batchNo) async {
+    // 1. Fetch Basic Details
+    final batchData = await DatabaseHelper.instance.getBatch(batchNo);
+
+    // 2. Fetch QC Details (New!)
+    final qcData = await DatabaseHelper.instance.getLatestQCRecord(batchNo);
+
+    if (!mounted) return;
+
+    if (batchData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Batch Details Not Found"), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    // 3. Show Dialog
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Column(
+          children: [
+            const Icon(Icons.verified_user, size: 40, color: Color(0xFF1C4175)),
+            const SizedBox(height: 10),
+            Text("Batch: $batchNo", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _sectionHeader("Inbound Details"),
+              _detailRow("Material", batchData['material']),
+              _detailRow("Vendor", batchData['vendor']),
+              _detailRow("GRN", batchData['grn']),
+              _detailRow("Received", batchData['regDate']),
+
+              const Divider(),
+              _sectionHeader("Quality Control"),
+              if (qcData != null) ...[
+                _detailRow("Status", qcData['status'].toString().toUpperCase()),
+                _detailRow("Approved By", qcData['reviewedBy']), // ✅ Shows who clicked Approve
+                _detailRow("QC Date", qcData['timestamp'].toString().split('T')[0]),
+                if (qcData['remarks'].toString().isNotEmpty)
+                  _detailRow("Remarks", qcData['remarks']),
+              ] else ...[
+                const Text("No QC Record Found (Auto-Approved?)", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+              ],
+
+              const Divider(),
+              _sectionHeader("Inventory"),
+              _detailRow("Original Qty", "${batchData['initialQty']} ${batchData['unit']}"),
+              _detailRow("Current Qty", "${batchData['currentQty']} ${batchData['unit']}"),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Close", style: TextStyle(color: Color(0xFF1C4175), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(title, style: TextStyle(color: Colors.blueGrey.shade700, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          Text(value, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -99,10 +190,12 @@ class _ProductionRunCardState extends State<_ProductionRunCard> {
           if (expanded) ...[
             const Divider(),
             const Padding(
-              padding: EdgeInsets.only(left: 16, bottom: 8),
+              padding: EdgeInsets.only(left: 16, bottom: 8, top: 8),
               child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text("Ingredients Used:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))
+                  // Changed to Black/Blue because White on White is invisible
+                  child: Text("Ingredients Used (Tap for Details):",
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0996F3), fontSize: 13))
               ),
             ),
 
@@ -114,9 +207,15 @@ class _ProductionRunCardState extends State<_ProductionRunCard> {
                 child: ListTile(
                   dense: true,
                   visualDensity: VisualDensity.compact,
+                  // ✅ ADDED ON TAP
+                  onTap: () => _showBatchDetails(ing['rawMaterialBatchNo']),
                   leading: const Icon(Icons.subdirectory_arrow_right, size: 18, color: Colors.green),
-                  title: Text("Batch: ${ing['rawMaterialBatchNo']}"), // e.g. SUG-001
-                  subtitle: Text("Qty Used: ${ing['qtyUsed']} Kg"),
+                  title: Text(
+                    "Batch: ${ing['rawMaterialBatchNo']}",
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, decoration: TextDecoration.underline), // Underline suggests clickable
+                  ),
+                  subtitle: Text("Qty Used: ${ing['qtyUsed']} Kg", style: const TextStyle(color: Colors.black87)),
+                  trailing: const Icon(Icons.info, size: 16, color: Colors.grey),
                 ),
               )),
             const SizedBox(height: 10),

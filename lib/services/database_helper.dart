@@ -47,12 +47,14 @@ CREATE TABLE batches (
   regDate TEXT NOT NULL,
   mfgDate TEXT NOT NULL,
   expDate TEXT NOT NULL,
-  status TEXT NOT NULL,
+  status TEXT NOT NULL,       
   shelfLocation TEXT,
   initialQty $realType,
   currentQty $realType,
   unit TEXT NOT NULL,
-  sampleQty TEXT
+  sampleQty TEXT,
+  inboundManager TEXT,        
+  isIssued INTEGER DEFAULT 0  
 )
 ''');
 
@@ -280,5 +282,40 @@ CREATE TABLE overrides (
   Future<List<Map<String, dynamic>>> getOverrideLogs() async {
     final db = await instance.database;
     return await db.query('overrides', orderBy: 'timestamp DESC');
+  }
+  Future<List<Map<String, dynamic>>> getInventoryStats() async {
+    final db = await instance.database;
+    // Sum currentQty grouped by material
+    return await db.rawQuery('''
+      SELECT material, SUM(currentQty) as totalQty 
+      FROM batches 
+      WHERE currentQty > 0
+      GROUP BY material
+    ''');
+  }
+
+
+  Future<List<Map<String, dynamic>>> getProductionStats() async {
+    final db = await instance.database;
+
+    return await db.rawQuery('''
+      SELECT productName, COUNT(DISTINCT finalBatchNo) as batchCount
+      FROM production_logs
+      GROUP BY productName
+    ''');
+  }
+  Future<Map<String, dynamic>?> getLatestQCRecord(String batchNo) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'qc_records',
+      where: 'batchNo = ?',
+      orderBy: 'timestamp DESC', // Get the most recent check
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return result.first;
+    }
+    return null;
   }
 }

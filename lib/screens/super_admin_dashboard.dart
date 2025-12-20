@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'traceability_screen.dart';
 import 'loginpage.dart';
 import 'audit_log_screen.dart';
+import 'analytics_screen.dart'; // ✅ Import Analytics Screen
 
 class SuperAdminDashboard extends StatelessWidget {
   const SuperAdminDashboard({super.key});
@@ -27,7 +28,7 @@ class SuperAdminDashboard extends StatelessWidget {
           children: [
             const Text(
               "Welcome, Omkar Marda",
-              style: TextStyle(fontSize: 24, color: Colors.black,fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, color: Colors.black, fontWeight: FontWeight.bold),
             ),
             const Text(
               "System Overview & Audit",
@@ -35,30 +36,36 @@ class SuperAdminDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // ---------------- ANALYTICS PREVIEW (Phase 3 Placeholder) ----------------
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF1C4175), Color(0xFF2E7CCC)]),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Total Production", style: TextStyle(color: Colors.white70)),
-                      Text("Running Smooth", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  Icon(Icons.insights, color: Colors.white, size: 40),
-                ],
+            // ---------------- ANALYTICS BUTTON (PHASE 3 INTEGRATED) ----------------
+            GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AnalyticsScreen()));
+              },
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFF1C4175), Color(0xFF2E7CCC)]),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [BoxShadow(color: Color(0x3F000000), blurRadius: 8, offset: Offset(0, 4))],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Business Intelligence", style: TextStyle(color: Colors.white70)),
+                        Text("View Analytics", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Icon(Icons.bar_chart, color: Colors.white, size: 40),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 30),
-            const Text("Audit Tools", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
+            const Text("Audit Tools", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
 
             // ---------------- TRACEABILITY BUTTON ----------------
@@ -73,6 +80,7 @@ class SuperAdminDashboard extends StatelessWidget {
 
             const SizedBox(height: 15),
 
+            // ---------------- OVERRIDE LOGS BUTTON ----------------
             _adminCard(
               context,
               title: "Override Logs",
@@ -112,7 +120,7 @@ class SuperAdminDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 18, color: Colors.blueGrey,fontWeight: FontWeight.bold)),
+                  Text(title, style: const TextStyle(fontSize: 18, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
                   Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                 ],
               ),

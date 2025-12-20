@@ -50,7 +50,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 4),
-                  Text("${log['reason']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  Text("${log['reason']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
                   Text("${log['timestamp'].split('T')[0]} • ${log['managerName']}", style: const TextStyle(fontSize: 12)),
                 ],
               ),
