@@ -3,6 +3,7 @@ import '../services/database_helper.dart';
 import '../models/user.dart';
 import 'admin_dashboard.dart';
 import 'qc_dashboard.dart';
+import 'worker_dashboard.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -124,6 +125,8 @@ class _LoginUIState extends State<LoginUI> {
     final username = usernameController.text.trim();
     final password = passwordController.text.trim();
 
+
+
     if (username.isEmpty || password.isEmpty) return;
 
     setState(() => isLoading = true);
@@ -138,6 +141,12 @@ class _LoginUIState extends State<LoginUI> {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminDashboard()));
       } else if (user.role == 'QC') {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const QCDashboard()));
+      } else if (user.role == 'WORKER') {
+
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => WorkerDashboard(workerName: user.name))
+        );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

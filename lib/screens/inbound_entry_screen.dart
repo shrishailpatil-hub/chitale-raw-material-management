@@ -62,6 +62,7 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
             _card(children: [
               // ✅ DROPDOWN REPLACES TEXT FIELD
               DropdownButtonFormField<String>(
+                dropdownColor: Colors.white,
                 decoration: InputDecoration(labelText: 'Material', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
                 value: selectedMaterial,
                 style: TextStyle(color: Colors.black),

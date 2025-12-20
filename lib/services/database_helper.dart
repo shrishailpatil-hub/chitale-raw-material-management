@@ -1,7 +1,7 @@
-import 'package:sqflite/sqflite.dart' hide Batch; // ✅ FIX: Hides the conflict
+import 'package:sqflite/sqflite.dart' hide Batch; // : Hides the conflict
 import 'package:path/path.dart';
 import '../models/user.dart';
-import '../models/batch.dart'; // ✅ Ensure this import exists
+import '../models/batch.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -79,11 +79,41 @@ CREATE TABLE materials (
 )
 ''');
 
+
+    // 5. FINISHED GOODS (Master Data)
+    await db.execute('''
+CREATE TABLE finished_goods (
+  id $idType,
+  name TEXT NOT NULL,
+  sku TEXT NOT NULL
+)
+''');
+
+    // 6. PRODUCTION LOGS (The Traceability Link)
+    await db.execute('''
+CREATE TABLE production_logs (
+  id $idType,
+  finalBatchNo TEXT NOT NULL,       -- e.g., KK-2025-001
+  productName TEXT NOT NULL,        -- e.g., Kaju Katli
+  rawMaterialBatchNo TEXT NOT NULL, -- e.g., SUG-001 (Scanned)
+  qtyUsed $realType,                -- e.g., 5.0 Kg
+  timestamp TEXT NOT NULL,
+  workerId TEXT NOT NULL
+)
+''');
+
+
+
+
     print("📦 Database Created Successfully");
 
     // Seed Data
+    await db.insert('finished_goods', {'name': 'Kaju Katli (250g)', 'sku': 'FG-KK-250'});
+    await db.insert('finished_goods', {'name': 'Dharwad Pedha', 'sku': 'FG-DP-500'});
+    await db.insert('finished_goods', {'name': 'Mango Barfi', 'sku': 'FG-MB-200'});
     await db.insert('users', {'username': 'arun', 'password': '123', 'role': 'ADMIN', 'name': 'Arun Jadhav'});
     await db.insert('users', {'username': 'aditi', 'password': '123', 'role': 'QC', 'name': 'Aditi Kadam'});
+    await db.insert('users', {'username': 'ramesh', 'password': '123', 'role': 'WORKER', 'name': 'Ramesh Worker'});
     await db.insert('materials', {'name': 'Sugar (Fine Grade)', 'standardQtyPerPallet': 50.0, 'unit': 'Kg'});
     await db.insert('materials', {'name': 'Cashew Nuts (W320)', 'standardQtyPerPallet': 25.0, 'unit': 'Kg'});
     await db.insert('materials', {'name': 'Buffalo Milk', 'standardQtyPerPallet': 100.0, 'unit': 'L'});
@@ -180,5 +210,16 @@ CREATE TABLE materials (
   Future<List<Map<String, dynamic>>> getQCRecords() async {
     final db = await instance.database;
     return await db.query('qc_records', orderBy: 'timestamp DESC');
+  }
+  // ---------------- PRODUCTION METHODS ----------------
+
+  Future<List<Map<String, dynamic>>> getFinishedGoods() async {
+    final db = await instance.database;
+    return await db.query('finished_goods');
+  }
+
+  Future<void> insertProductionLog(Map<String, dynamic> row) async {
+    final db = await instance.database;
+    await db.insert('production_logs', row);
   }
 }
