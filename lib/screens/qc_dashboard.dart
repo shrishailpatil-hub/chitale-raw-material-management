@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import '../models/user.dart'; // ✅ Import User
 import '../models/batch.dart';
 import '../models/qc_record.dart';
 import '../services/qc_service.dart';
 import 'qc_scan_batch_screen.dart';
-import 'pending_qc_screen.dart';
 import 'qc_history_screen.dart';
-import 'loginpage.dart'; // ✅ Required
+import 'loginpage.dart';
 
 class QCDashboard extends StatelessWidget {
-  const QCDashboard({super.key});
+  final User currentUser; // ✅ Accept User
+  const QCDashboard({super.key, required this.currentUser});
 
   @override
   Widget build(BuildContext context) {
@@ -16,80 +17,51 @@ class QCDashboard extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C4175),
-        title: const Text(
-          'QC Dashboard',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
+        title: const Text('QC Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---------------- WELCOME ----------------
-            const Text(
-              "Welcome,\nAditi Kadam",
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
+            // ✅ REMOVED 'const' HERE because currentUser.name is variable
+            Text(
+              "Welcome,\n${currentUser.name}",
+              style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700),
             ),
 
             const SizedBox(height: 20),
 
-            // ---------------- QUICK STATS (REACTIVE) ----------------
-            const Text(
-              "Quick Stats",
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-
+            // Stats Section
+            const Text("Quick Stats", style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
 
-            // ⚡ MAGIC HAPPENS HERE: Listening to Data Changes
             ValueListenableBuilder<List<QCRecord>>(
               valueListenable: QCService().qcHistoryNotifier,
               builder: (context, history, child) {
-                // Calculate History Stats
-                final int approvedCount = history
-                    .where((r) => r.status == QCStatus.approved)
-                    .length;
-                final int rejectedCount = history
-                    .where((r) => r.status == QCStatus.rejected)
-                    .length;
-                final int onHoldCount = history
-                    .where((r) => r.status == QCStatus.onHold)
-                    .length;
+                final int approvedCount = history.where((r) => r.status == QCStatus.approved).length;
+                final int rejectedCount = history.where((r) => r.status == QCStatus.rejected).length;
+                final int onHoldCount = history.where((r) => r.status == QCStatus.onHold).length;
 
                 return ValueListenableBuilder<List<Batch>>(
                   valueListenable: QCService().pendingBatchesNotifier,
                   builder: (context, pending, child) {
-                    // Calculate Pending Stats
                     final int pendingCount = pending.length;
-
                     return Column(
                       children: [
                         Row(
                           children: [
-                            _statCard(approvedCount.toString(), "Approved QC",
-                                const Color(0xFF39B54A)),
+                            _statCard(approvedCount.toString(), "Approved", const Color(0xFF39B54A)),
                             const SizedBox(width: 12),
-                            _statCard(onHoldCount.toString(), "On Hold QC",
-                                const Color(0xFFFFC107)),
+                            _statCard(onHoldCount.toString(), "On Hold", const Color(0xFFFFC107)),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            _statCard(rejectedCount.toString(), "Rejected QC",
-                                const Color(0xFFFF5023)),
+                            _statCard(rejectedCount.toString(), "Rejected", const Color(0xFFFF5023)),
                             const SizedBox(width: 12),
-                            _statCard(pendingCount.toString(), "Pending QC",
-                                const Color(0xFFF55F51)),
+                            _statCard(pendingCount.toString(), "Pending", const Color(0xFFF55F51)),
                           ],
                         ),
                       ],
@@ -100,17 +72,7 @@ class QCDashboard extends StatelessWidget {
             ),
 
             const SizedBox(height: 30),
-
-            // ---------------- ACTION MENU ----------------
-            const Text(
-              "Action Menu",
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-
+            const Text("Action Menu", style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
 
             GridView.count(
@@ -127,19 +89,8 @@ class QCDashboard extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const QCScanBatchScreen()),
-                    );
-                  },
-                ),
-                _actionCard(
-                  icon: Icons.pending_actions,
-                  label: "Pending QC",
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const PendingQCScreen()),
+                      // ✅ PASS USER TO SCAN SCREEN
+                      MaterialPageRoute(builder: (_) => QCScanBatchScreen(currentUser: currentUser)),
                     );
                   },
                 ),
@@ -147,11 +98,7 @@ class QCDashboard extends StatelessWidget {
                   icon: Icons.history,
                   label: "QC History",
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const QCHistoryScreen()),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const QCHistoryScreen()));
                   },
                 ),
                 _actionCard(
@@ -160,33 +107,19 @@ class QCDashboard extends StatelessWidget {
                   onTap: () async {
                     final shouldLogout = await showDialog<bool>(
                       context: context,
-                      builder: (dialogContext) => AlertDialog(
+                      builder: (ctx) => AlertDialog(
                         title: const Text("Logout"),
-                        content: const Text("Are you sure you want to logout?"),
+                        content: const Text("Are you sure?"),
                         actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, false),
-                            child: const Text("Cancel"),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, true),
-                            child: const Text(
-                              "Logout",
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+                          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Logout", style: TextStyle(color: Colors.red))),
                         ],
                       ),
                     );
 
                     if (shouldLogout == true) {
                       if (!context.mounted) return;
-                      // ✅ FIX: This line prevents the black screen
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginPage()),
-                            (route) => false,
-                      );
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
                     }
                   },
                 ),
@@ -198,74 +131,35 @@ class QCDashboard extends StatelessWidget {
     );
   }
 
-  // ---------------- STAT CARD ----------------
   static Widget _statCard(String value, String label, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+        child: Column(children: [
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+        ]),
       ),
     );
   }
 
-  // ---------------- ACTION CARD ----------------
-  static Widget _actionCard({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
+  static Widget _actionCard({required IconData icon, required String label, required VoidCallback onTap}) {
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
       onTap: onTap,
-      child: Ink(
+      child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x3F000000),
-              blurRadius: 6,
-              offset: Offset(2, 2),
-            ),
-          ],
+          boxShadow: const [BoxShadow(color: Color(0x3F000000), blurRadius: 6, offset: Offset(2, 2))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 40, color: const Color(0xFF1C4175)),
             const SizedBox(height: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text(label, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600)),
           ],
         ),
       ),

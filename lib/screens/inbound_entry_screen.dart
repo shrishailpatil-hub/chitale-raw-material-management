@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import '../models/batch.dart';
 import '../services/database_helper.dart';
+import '../models/user.dart';
 
 class InboundEntryScreen extends StatefulWidget {
-  const InboundEntryScreen({super.key});
+  final User currentUser;
+  const InboundEntryScreen({super.key, required this.currentUser});
 
   @override
   State<InboundEntryScreen> createState() => _InboundEntryScreenState();
@@ -63,11 +65,20 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
               // ✅ DROPDOWN REPLACES TEXT FIELD
               DropdownButtonFormField<String>(
                 dropdownColor: Colors.white,
-                decoration: InputDecoration(labelText: 'Material', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                decoration: InputDecoration(
+                    labelText: 'Material',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
+                ),
                 value: selectedMaterial,
-                style: TextStyle(color: Colors.black),
+                // Force Selected Text to Black
+                style: const TextStyle(color: Colors.black, fontSize: 16),
+                // Force Arrow Icon to Black
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                 items: materials.map((m) {
-                  return DropdownMenuItem<String>(value: m['name'], child: Text(m['name']));
+                  return DropdownMenuItem<String>(
+                    value: m['name'],
+                    child: Text(m['name'], style: const TextStyle(color: Colors.black)),
+                  );
                 }).toList(),
                 onChanged: (val) => setState(() => selectedMaterial = val),
               ),
@@ -91,7 +102,10 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7CCC), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7CCC),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                ),
                 onPressed: _onGeneratePressed,
                 child: const Text('GENERATE GRN & SAVE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
@@ -127,7 +141,12 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
       unit: 'Kg',
     );
 
-    await DatabaseHelper.instance.insertBatch(newBatch.toMap());
+    // ✅ CRITICAL FIX: Add "Inbound Manager" and "isIssued" before saving
+    final batchMap = newBatch.toMap();
+    batchMap['inboundManager'] = widget.currentUser.name; // Save who created it
+    batchMap['isIssued'] = 0; // Default: Not Issued (0)
+
+    await DatabaseHelper.instance.insertBatch(batchMap);
 
     if (mounted) {
       showDialog(
@@ -149,8 +168,20 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
     }
   }
 
-  Widget _sectionTitle(String text) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Align(alignment: Alignment.centerLeft, child: Text(text, style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700))));
-  Widget _card({required List<Widget> children}) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(children: children));
+  Widget _sectionTitle(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(text, style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700))
+      )
+  );
+
+  Widget _card({required List<Widget> children}) => Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      child: Column(children: children)
+  );
+
   Widget _input(String label, TextEditingController controller, {bool isNumber = false}) => TextField(
     controller: controller,
     style: const TextStyle(color: Colors.black), // 👈 THIS MAKES TEXT BLACK
@@ -160,5 +191,24 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
     ),
   );
-  Widget _dateInput(String label, TextEditingController controller) => TextField(controller: controller, style: const TextStyle(color: Colors.black),readOnly: true, decoration: InputDecoration(labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), suffixIcon: const Icon(Icons.calendar_today)), onTap: () async { DateTime? date = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2035), initialDate: DateTime.now()); if (date != null) controller.text = '${date.day}/${date.month}/${date.year}'; });
+
+  Widget _dateInput(String label, TextEditingController controller) => TextField(
+      controller: controller,
+      style: const TextStyle(color: Colors.black), // 👈 THIS MAKES TEXT BLACK
+      readOnly: true,
+      decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          suffixIcon: const Icon(Icons.calendar_today)
+      ),
+      onTap: () async {
+        DateTime? date = await showDatePicker(
+            context: context,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2035),
+            initialDate: DateTime.now()
+        );
+        if (date != null) controller.text = '${date.day}/${date.month}/${date.year}';
+      }
+  );
 }

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import '../services/database_helper.dart';
 import '../models/batch.dart';
-import '../models/user.dart'; // ✅ Import User
+import '../models/user.dart';
 import 'scanner_screen.dart';
 
 class ProductionEntryScreen extends StatefulWidget {
-  final User currentUser; // ✅ Accept User Object
+  final User currentUser;
 
   const ProductionEntryScreen({super.key, required this.currentUser});
 
@@ -51,7 +51,6 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ Fixed Syntax Error Here
             Text(
               "Operator: ${widget.currentUser.name} (${widget.currentUser.username})",
               style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
@@ -111,7 +110,6 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
 
             const SizedBox(height: 8),
 
-            // ✅ Fixed Syntax Error Here (Corrected logic flow)
             if (addedIngredients.isEmpty)
               Container(
                 padding: const EdgeInsets.all(20),
@@ -179,8 +177,16 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
     if (code == null) return;
 
     final batchMap = await DatabaseHelper.instance.getBatch(code);
+
+    // ✅ FIX 1: Null Check FIRST
     if (batchMap == null) {
       _showError("Batch not found!");
+      return;
+    }
+
+    // ✅ FIX 2: Check Issue Status (Safe now)
+    if (batchMap['isIssued'] == 0) {
+      _showError("⛔ Access Denied!\nBatch is still in Warehouse.\nAsk Store Manager to Issue it first.");
       return;
     }
 
@@ -212,6 +218,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
             TextField(
               controller: qtyController,
               keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.black), // ✅ Black text input
               decoration: const InputDecoration(labelText: "Quantity to Use (Kg)", border: OutlineInputBorder()),
             ),
           ],
@@ -250,7 +257,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
         'rawMaterialBatchNo': item['batchNo'],
         'qtyUsed': item['qty'],
         'timestamp': DateTime.now().toIso8601String(),
-        'workerId': widget.currentUser.username, // ✅ Fixed Usage
+        'workerId': widget.currentUser.username,
       });
     }
 

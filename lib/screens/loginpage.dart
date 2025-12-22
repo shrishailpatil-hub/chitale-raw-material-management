@@ -145,8 +145,8 @@ class _LoginUIState extends State<LoginUI> {
         // Arun or Vijay (Pass the user object!)
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminDashboard(currentUser: user)));
       } else if (user.role == 'QC') {
-        // Aditi or Sneha
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const QCDashboard()));
+        // ✅ PASS THE USER OBJECT HERE
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => QCDashboard(currentUser: user)));
       } else if (user.role == 'WORKER') {
         // Ramesh or Suresh
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => WorkerDashboard(user: user)));

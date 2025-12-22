@@ -103,7 +103,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     icon: Icons.add_box,
                     label: "Inbound Entry",
                     textColor: const Color(0xFF1C4175),
-                    onTap: () => _navigate(const InboundEntryScreen()),
+                    onTap: () => _navigate(InboundEntryScreen(currentUser: widget.currentUser!)),
                   ),
                   _actionCard(
                     icon: Icons.move_to_inbox,

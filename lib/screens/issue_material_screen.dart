@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/batch.dart';
 import '../services/database_helper.dart';
-import '../models/user.dart'; // Import User
 import 'scanner_screen.dart';
-import 'manager_override_screen.dart'; // Import Override Screen
+import 'manager_override_screen.dart';
 
 class IssueMaterialScreen extends StatefulWidget {
   const IssueMaterialScreen({super.key});
@@ -156,7 +155,7 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
           color: isMatch ? Colors.green.shade50 : Colors.orange.shade50,
           borderColor: isMatch ? Colors.green.shade800 : Colors.orange.shade800,
           icon: isMatch ? Icons.check_circle : Icons.warning_amber,
-          textColor: isMatch ? Colors.green.shade900 : Colors.deepOrange.shade900, // High Contrast
+          textColor: isMatch ? Colors.green.shade900 : Colors.deepOrange.shade900,
           children: [
             Text("Scanned: ${scannedBatch!.batchNo}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
             Text("Available: ${scannedBatch!.currentQty} ${scannedBatch!.unit}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
@@ -170,13 +169,13 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
 
         const SizedBox(height: 20),
 
-        // ISSUE QTY INPUT
+        // ISSUE QTY INPUT (Optional now, mostly for record keeping)
         TextField(
           controller: _qtyController,
           keyboardType: TextInputType.number,
           style: const TextStyle(color: Colors.black),
           decoration: const InputDecoration(
-            labelText: "Quantity to Issue",
+            labelText: "Quantity to Move (Kg)",
             border: OutlineInputBorder(),
             suffixText: "Kg",
             labelStyle: TextStyle(color: Colors.black87),
@@ -235,17 +234,15 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
   void _confirmIssue(bool isMatch) async {
     double qty = double.tryParse(_qtyController.text) ?? 0;
 
-    // 🛑 VALIDATION 1: Valid Number
     if (qty <= 0) {
-      _showError("Please enter a valid quantity greater than 0");
+      _showError("Please enter a valid quantity");
       return;
     }
 
-    // 🛑 VALIDATION 2: Strictly enforce Available Quantity
-    // We check against the SCANNED batch (the one we are issuing from)
+    // STRICT STOCK CHECK
     if (qty > scannedBatch!.currentQty) {
       _showError("⚠️ NOT ENOUGH STOCK!\nYou have ${scannedBatch!.currentQty} Kg available.");
-      return; // Stop right here. Do not proceed to override.
+      return;
     }
 
     String? overrideReason;
@@ -264,14 +261,23 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
       );
 
       if (result == null || result['authorized'] != true) {
-        return; // Cancelled or Failed
+        return;
       }
 
       overrideReason = result['reason'];
     }
 
-    // 1. UPDATE STOCK (Deduct)
-    await DatabaseHelper.instance.issueBatchQty(scannedBatch!.batchNo, qty);
+    // ✅ THE BUG FIX: MARK AS ISSUED (isIssued = 1)
+    // We do NOT deduct stock here. We just move it to the floor.
+    // Ramesh (Worker) will deduct it when he uses it.
+
+    final db = await DatabaseHelper.instance.database;
+    await db.update(
+        'batches',
+        {'isIssued': 1},
+        where: 'batchNo = ?',
+        whereArgs: [scannedBatch!.batchNo]
+    );
 
     // 2. SAVE OVERRIDE LOG (If applicable)
     if (overrideReason != null) {
@@ -286,7 +292,7 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Issued $qty Kg successfully!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Batch Moved to Factory Floor!")));
       Navigator.pop(context);
     }
   }
@@ -295,13 +301,12 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
-  // ✅ UPDATED INFO CARD (Dark Text on Light Background)
   Widget _infoCard({
     required String title,
     required Color color,
     required Color borderColor,
     required IconData icon,
-    required Color textColor, // New Param for Text Color
+    required Color textColor,
     required List<Widget> children
   }) {
     return Container(
