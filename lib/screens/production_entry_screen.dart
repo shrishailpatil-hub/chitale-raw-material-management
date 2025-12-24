@@ -101,8 +101,8 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
                 _sectionTitle("2. Scan Ingredients"),
                 ElevatedButton.icon(
                   onPressed: _scanIngredient,
-                  icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  label: const Text("Scan Bag"),
+                  icon: const Icon(Icons.qr_code_scanner, size: 18,color: Colors.white,),
+                  label: const Text("Scan Bag",style: TextStyle(color: Colors.white),),
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7CCC)),
                 )
               ],
@@ -163,7 +163,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
                 onPressed: (selectedProduct != null && addedIngredients.isNotEmpty)
                     ? _submitProduction
                     : null,
-                child: const Text("CONFIRM PRODUCTION", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text("CONFIRM PRODUCTION", style: TextStyle(fontSize: 18, color: Colors.white,fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -218,7 +218,7 @@ class _ProductionEntryScreenState extends State<ProductionEntryScreen> {
             TextField(
               controller: qtyController,
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.black), // ✅ Black text input
+              style: const TextStyle(color: Colors.white), // ✅ Black text input
               decoration: const InputDecoration(labelText: "Quantity to Use (Kg)", border: OutlineInputBorder()),
             ),
           ],

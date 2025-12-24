@@ -48,10 +48,10 @@ class WorkerDashboard extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   elevation: 5,
                 ),
-                icon: const Icon(Icons.factory, size: 60),
+                icon: const Icon(Icons.factory, size: 60,color: Colors.white,),
                 label: const Text(
                   "NEW PRODUCTION BATCH",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 22, color: Colors.white,fontWeight: FontWeight.bold),
                 ),
                 onPressed: () {
                   Navigator.push(

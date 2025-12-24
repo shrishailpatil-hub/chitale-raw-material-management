@@ -131,7 +131,7 @@ class _HistoryCard extends StatelessWidget {
           // BATCH INFO
           Text(
             "Batch: ${record.batch.batchNo}",
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15,color: Colors.black),
           ),
 
           const SizedBox(height: 8),
@@ -145,7 +145,7 @@ class _HistoryCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Remarks: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text("Remarks: ", style: TextStyle(fontWeight: FontWeight.bold,color: Colors.blueAccent)),
                   Expanded(
                     child: Text(
                       record.remarks,
@@ -162,7 +162,7 @@ class _HistoryCard extends StatelessWidget {
             children: [
               Text(
                 "By: ${record.reviewedBy}",
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: Colors.grey,fontWeight: FontWeight.bold),
               ),
               Text(
                 _formatDate(record.timestamp),

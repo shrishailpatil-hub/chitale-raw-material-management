@@ -72,12 +72,14 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10),border: Border.all(color: Colors.blueAccent)),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   isExpanded: true,
                   hint: const Text("Choose Material"),
                   value: selectedMaterial,
+                    dropdownColor: Colors.white,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                   items: materials.map((m) {
                     return DropdownMenuItem<String>(
                       value: m['name'],
@@ -130,8 +132,8 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text("SCAN BATCH TO PICK"),
+                    icon: const Icon(Icons.qr_code_scanner,color: Colors.white,),
+                    label: const Text("SCAN BATCH TO PICK",style: TextStyle(color: Colors.white),),
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1C4175)),
                     onPressed: _scanBatch,
                   ),
@@ -195,7 +197,7 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
             onPressed: () => _confirmIssue(isMatch),
             child: Text(
               isMatch ? "CONFIRM ISSUE" : "REQUEST OVERRIDE & ISSUE",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(fontWeight: FontWeight.bold,color: Colors.white ,fontSize: 16),
             ),
           ),
         ),
@@ -313,7 +315,7 @@ class _IssueMaterialScreenState extends State<IssueMaterialScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: color,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor)
       ),

@@ -32,8 +32,8 @@ class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
               isDone: selectedBatch != null,
               child: selectedBatch == null
                   ? ElevatedButton.icon(
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('SCAN BATCH QR'),
+                icon: const Icon(Icons.qr_code_scanner,color: Colors.white,),
+                label: const Text('SCAN BATCH QR',style: TextStyle(color: Colors.white),),
                 style: _btnStyle(const Color(0xFF1C4175)),
                 onPressed: () => _scanQr(isBatch: true),
               )
@@ -48,23 +48,23 @@ class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
                 isDone: scannedShelfId != null,
                 child: scannedShelfId == null
                     ? ElevatedButton.icon(
-                  icon: const Icon(Icons.shelves),
-                  label: const Text('SCAN SHELF QR'),
+                  icon: const Icon(Icons.shelves,color: Colors.white,),
+                  label: const Text('SCAN SHELF QR',style: TextStyle(color: Colors.white),),
                   style: _btnStyle(Colors.orange),
                   onPressed: () => _scanQr(isBatch: false),
                 )
                     : Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: Colors.orange,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.orange),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.location_on, color: Colors.orange),
+                      const Icon(Icons.location_on, color: Colors.white),
                       const SizedBox(width: 12),
-                      Text("Location: $scannedShelfId", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text("Location: $scannedShelfId", style: const TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -81,7 +81,7 @@ class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: (selectedBatch != null && scannedShelfId != null) ? _confirmAssignment : null,
-                child: const Text('CONFIRM ASSIGNMENT', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text('CONFIRM ASSIGNMENT', style: TextStyle(fontSize: 18, color: Colors.white,fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -139,7 +139,7 @@ class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [Icon(isDone ? Icons.check_circle : Icons.circle_outlined, color: isDone ? Colors.green : Colors.grey), const SizedBox(width: 10), Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
+            Row(children: [Icon(isDone ? Icons.check_circle : Icons.circle_outlined, color: isDone ? Colors.green : Colors.grey), const SizedBox(width: 10), Text(title, style: const TextStyle(fontSize: 18, color: Colors.white,fontWeight: FontWeight.bold))]),
             const SizedBox(height: 16),
             child,
           ],
@@ -156,8 +156,8 @@ class _ShelfAssignScreenState extends State<ShelfAssignScreen> {
         Text("Batch: ${batch.batchNo}", style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 5),
         Chip(
-          label: Text(batch.status.name.toUpperCase()),
-          backgroundColor: batch.status == BatchStatus.approved ? Colors.green.shade100 : Colors.orange.shade100,
+          label: Text(batch.status.name.toUpperCase(),style: TextStyle(color: Colors.black),),
+          backgroundColor: batch.status == BatchStatus.approved ? Colors.green : Colors.orange,
         )
       ],
     );

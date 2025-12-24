@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
-import '../models/user.dart'; // ✅ Import User
+import '../models/user.dart';
 import '../models/batch.dart';
 import '../models/qc_record.dart';
 import '../services/qc_service.dart';
 import 'qc_scan_batch_screen.dart';
 import 'qc_history_screen.dart';
+import 'pending_qc_screen.dart'; // ✅ Added the dedicated Pending Screen
 import 'loginpage.dart';
 
-class QCDashboard extends StatelessWidget {
-  final User currentUser; // ✅ Accept User
+class QCDashboard extends StatefulWidget {
+  final User currentUser;
   const QCDashboard({super.key, required this.currentUser});
+
+  @override
+  State<QCDashboard> createState() => _QCDashboardState();
+}
+
+class _QCDashboardState extends State<QCDashboard> {
+  @override
+  void initState() {
+    super.initState();
+    // Refresh data on load
+    QCService().refreshPendingList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,23 +30,22 @@ class QCDashboard extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C4175),
-        title: const Text('QC Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('QC Dashboard', style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ REMOVED 'const' HERE because currentUser.name is variable
             Text(
-              "Welcome,\n${currentUser.name}",
-              style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700),
+              "Welcome,\n${widget.currentUser.name}",
+              style: const TextStyle(color: Colors.black, fontSize: 22, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 20),
 
-            // Stats Section
-            const Text("Quick Stats", style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700)),
+            // ---------------- 📊 STATS CARDS (THE NUMBERS) ----------------
+            const Text("Quick Stats", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
 
             ValueListenableBuilder<List<QCRecord>>(
@@ -61,7 +73,7 @@ class QCDashboard extends StatelessWidget {
                           children: [
                             _statCard(rejectedCount.toString(), "Rejected", const Color(0xFFFF5023)),
                             const SizedBox(width: 12),
-                            _statCard(pendingCount.toString(), "Pending", const Color(0xFFF55F51)),
+                            _statCard(pendingCount.toString(), "Pending", const Color(0xFF2E7CCC)),
                           ],
                         ),
                       ],
@@ -72,7 +84,9 @@ class QCDashboard extends StatelessWidget {
             ),
 
             const SizedBox(height: 30),
-            const Text("Action Menu", style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w700)),
+
+            // ---------------- 🛠️ ACTION MENU (4 BUTTONS) ----------------
+            const Text("Action Menu", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
             GridView.count(
@@ -85,43 +99,24 @@ class QCDashboard extends StatelessWidget {
               children: [
                 _actionCard(
                   icon: Icons.qr_code_scanner,
-                  label: "Scan Batch",
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      // ✅ PASS USER TO SCAN SCREEN
-                      MaterialPageRoute(builder: (_) => QCScanBatchScreen(currentUser: currentUser)),
-                    );
-                  },
+                  label: "Scan New",
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QCScanBatchScreen(currentUser: widget.currentUser))),
+                ),
+                _actionCard(
+                  icon: Icons.pending_actions,
+                  label: "Pending QC", // ✅ 4th Option Integrated
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PendingQCScreen(currentUser: widget.currentUser))),
                 ),
                 _actionCard(
                   icon: Icons.history,
                   label: "QC History",
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const QCHistoryScreen()));
-                  },
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QCHistoryScreen())),
                 ),
                 _actionCard(
                   icon: Icons.logout,
                   label: "Logout",
-                  onTap: () async {
-                    final shouldLogout = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text("Logout"),
-                        content: const Text("Are you sure?"),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
-                          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Logout", style: TextStyle(color: Colors.red))),
-                        ],
-                      ),
-                    );
-
-                    if (shouldLogout == true) {
-                      if (!context.mounted) return;
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
-                    }
-                  },
+                  textColor: Colors.red,
+                  onTap: () => _handleLogout(context),
                 ),
               ],
             ),
@@ -131,38 +126,53 @@ class QCDashboard extends StatelessWidget {
     );
   }
 
-  static Widget _statCard(String value, String label, Color color) {
+  // ---------------- WIDGET HELPERS ----------------
+
+  Widget _statCard(String value, String label, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+        ),
         child: Column(children: [
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800)),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
         ]),
       ),
     );
   }
 
-  static Widget _actionCard({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _actionCard({required IconData icon, required String label, required VoidCallback onTap, Color textColor = Colors.black}) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: const [BoxShadow(color: Color(0x3F000000), blurRadius: 6, offset: Offset(2, 2))],
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [BoxShadow(color: Color(0x1F000000), blurRadius: 8, offset: Offset(2, 2))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: const Color(0xFF1C4175)),
+            Icon(icon, size: 42, color: const Color(0xFF1C4175)),
             const SizedBox(height: 12),
-            Text(label, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
           ],
         ),
       ),
+    );
+  }
+
+  void _handleLogout(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false
     );
   }
 }

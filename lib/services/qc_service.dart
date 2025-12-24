@@ -49,14 +49,14 @@ class QCService {
       remarks: remarks,
       reviewedBy: reviewedBy,
       timestamp: DateTime.now(),
-      parameters: parameters ?? {}, // ✅ Pass parameters safely
+      parameters: parameters ?? {},
     );
 
     String dbStatus = status.name;
 
     await DatabaseHelper.instance.updateBatchStatus(
         batch.batchNo,
-        dbStatus
+        status.name
     );
 
     await DatabaseHelper.instance.insertQCRecord(record.toMap());
@@ -68,24 +68,33 @@ class QCService {
   Future<void> _loadHistory() async {
     final recordsData = await DatabaseHelper.instance.getQCRecords();
 
-    List<QCRecord> history = [];
+    // Use a Map to keep only the LATEST record for each batchNo
+    Map<String, QCRecord> latestRecords = {};
 
     for (var row in recordsData) {
       final batchMap = await DatabaseHelper.instance.getBatch(row['batchNo']);
       if (batchMap != null) {
         final batch = Batch.fromMap(batchMap);
+        final timestamp = DateTime.parse(row['timestamp']);
+        final batchNo = row['batchNo'];
 
-        history.add(QCRecord(
+        final currentRecord = QCRecord(
           batch: batch,
           status: QCStatus.values.firstWhere((e) => e.name == row['status']),
           remarks: row['remarks'],
           reviewedBy: row['reviewedBy'],
-          timestamp: DateTime.parse(row['timestamp']),
-          // Parameters default to empty map in model
-        ));
+          timestamp: timestamp,
+        );
+
+        // Only keep the record if it's newer than what we already have for this batch
+        if (!latestRecords.containsKey(batchNo) ||
+            timestamp.isAfter(latestRecords[batchNo]!.timestamp)) {
+          latestRecords[batchNo] = currentRecord;
+        }
       }
     }
 
-    qcHistoryNotifier.value = history;
+    // Update the notifier with the filtered list
+    qcHistoryNotifier.value = latestRecords.values.toList();
   }
 }

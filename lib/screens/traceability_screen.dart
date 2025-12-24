@@ -95,7 +95,7 @@ class _ProductionRunCardState extends State<_ProductionRunCard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Column(
           children: [
-            const Icon(Icons.verified_user, size: 40, color: Color(0xFF1C4175)),
+            const Icon(Icons.verified_user, size: 40, color: Colors.blue),
             const SizedBox(height: 10),
             Text("Batch: $batchNo", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
@@ -132,7 +132,7 @@ class _ProductionRunCardState extends State<_ProductionRunCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Close", style: TextStyle(color: Color(0xFF1C4175), fontWeight: FontWeight.bold)),
+            child: const Text("Close", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -144,7 +144,7 @@ class _ProductionRunCardState extends State<_ProductionRunCard> {
       padding: const EdgeInsets.only(bottom: 8, top: 4),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(title, style: TextStyle(color: Colors.blueGrey.shade700, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+        child: Text(title, style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
       ),
     );
   }

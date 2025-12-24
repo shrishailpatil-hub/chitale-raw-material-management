@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/batch.dart';
+import '../models/user.dart'; // ✅ Added Import
 import '../services/qc_service.dart';
 import 'qc_review_screen.dart';
 
 class PendingQCScreen extends StatelessWidget {
-  const PendingQCScreen({super.key});
+  final User currentUser; // ✅ Added to track who is reviewing
+
+  const PendingQCScreen({super.key, required this.currentUser});
 
   @override
   Widget build(BuildContext context) {
@@ -14,8 +17,9 @@ class PendingQCScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF1C4175),
         title: const Text(
           'Pending QC',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
@@ -23,8 +27,10 @@ class PendingQCScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
+              style: const TextStyle(color: Colors.black),
               decoration: InputDecoration(
                 hintText: 'Search material or batch #',
+                hintStyle: const TextStyle(color: Colors.grey),
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
@@ -39,10 +45,8 @@ class PendingQCScreen extends StatelessWidget {
           // ---------------- REACTIVE LIST ----------------
           Expanded(
             child: ValueListenableBuilder<List<Batch>>(
-              // ✅ THIS IS THE KEY: Listen to the Service directly
               valueListenable: QCService().pendingBatchesNotifier,
               builder: (context, batches, child) {
-
                 if (batches.isEmpty) {
                   return const Center(
                     child: Text(
@@ -61,7 +65,10 @@ class PendingQCScreen extends StatelessWidget {
                   itemCount: batches.length,
                   itemBuilder: (context, index) {
                     final batch = batches[index];
-                    return _PendingQCCard(batch: batch);
+                    return _PendingQCCard(
+                      batch: batch,
+                      currentUser: currentUser, // ✅ Pass it here
+                    );
                   },
                 );
               },
@@ -76,8 +83,9 @@ class PendingQCScreen extends StatelessWidget {
 // ---------------- QC CARD ----------------
 class _PendingQCCard extends StatelessWidget {
   final Batch batch;
+  final User currentUser; // ✅ Added field
 
-  const _PendingQCCard({required this.batch});
+  const _PendingQCCard({required this.batch, required this.currentUser});
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +95,10 @@ class _PendingQCCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => QCReviewScreen(batch: batch),
+            builder: (_) => QCReviewScreen(
+              batch: batch,
+              currentUser: currentUser, // ✅ FIX: This resolves the red underline
+            ),
           ),
         );
       },
@@ -117,7 +128,7 @@ class _PendingQCCard extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -130,13 +141,16 @@ class _PendingQCCard extends StatelessWidget {
                   ),
                   child: const Text(
                     'Pending',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text('Batch No: ${batch.batchNo}', style: const TextStyle(color: Colors.black)),
+            Text(
+                'Batch No: ${batch.batchNo}',
+                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w500)
+            ),
           ],
         ),
       ),

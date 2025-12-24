@@ -82,17 +82,18 @@ class _ManagerOverrideScreenState extends State<ManagerOverrideScreen> {
             const SizedBox(height: 30),
 
             // 🔒 AUTH FORM
-            const Text("Authorization", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text("Authorization", style: TextStyle(fontSize: 20, color: Colors.black,fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
 
             TextField(
               controller: _pinController,
               obscureText: true,
               keyboardType: TextInputType.number,
+              style: TextStyle(color: Colors.black),
               decoration: const InputDecoration(
                 labelText: "Manager PIN",
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline),
+                prefixIcon: Icon(Icons.lock_outline,color: Colors.black,),
               ),
             ),
 
@@ -104,10 +105,10 @@ class _ManagerOverrideScreenState extends State<ManagerOverrideScreen> {
               decoration: const InputDecoration(
                 labelText: "Reason for Override",
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.comment),
+                prefixIcon: Icon(Icons.comment,color: Colors.black,),
               ),
               value: selectedReason,
-              items: reasons.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+              items: reasons.map((r) => DropdownMenuItem(value: r, child: Text(r,style: TextStyle(color: Colors.black),))).toList(),
               onChanged: (val) => setState(() => selectedReason = val),
             ),
 
@@ -116,6 +117,7 @@ class _ManagerOverrideScreenState extends State<ManagerOverrideScreen> {
               const SizedBox(height: 15),
               TextField(
                 controller: _reasonController,
+                style: TextStyle(color: Colors.black),
                 decoration: const InputDecoration(
                   labelText: "Specify Reason",
                   border: OutlineInputBorder(),

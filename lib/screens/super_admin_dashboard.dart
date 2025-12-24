@@ -27,7 +27,7 @@ class SuperAdminDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Welcome, Omkar Marda",
+              "Welcome",
               style: TextStyle(fontSize: 24, color: Colors.black, fontWeight: FontWeight.bold),
             ),
             const Text(
