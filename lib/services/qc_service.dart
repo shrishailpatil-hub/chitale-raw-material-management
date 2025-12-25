@@ -27,7 +27,6 @@ class QCService {
         .map((map) => Batch.fromMap(map))
         .where((b) => b.status == BatchStatus.newBatch || b.status == BatchStatus.onHold)
         .toList();
-
     pendingBatchesNotifier.value = pending;
   }
 
@@ -68,33 +67,26 @@ class QCService {
   Future<void> _loadHistory() async {
     final recordsData = await DatabaseHelper.instance.getQCRecords();
 
-    // Use a Map to keep only the LATEST record for each batchNo
-    Map<String, QCRecord> latestRecords = {};
+    List<QCRecord> history = [];
+
+
 
     for (var row in recordsData) {
       final batchMap = await DatabaseHelper.instance.getBatch(row['batchNo']);
       if (batchMap != null) {
         final batch = Batch.fromMap(batchMap);
-        final timestamp = DateTime.parse(row['timestamp']);
-        final batchNo = row['batchNo'];
 
-        final currentRecord = QCRecord(
+        history.add(QCRecord(
           batch: batch,
           status: QCStatus.values.firstWhere((e) => e.name == row['status']),
           remarks: row['remarks'],
           reviewedBy: row['reviewedBy'],
-          timestamp: timestamp,
-        );
-
-        // Only keep the record if it's newer than what we already have for this batch
-        if (!latestRecords.containsKey(batchNo) ||
-            timestamp.isAfter(latestRecords[batchNo]!.timestamp)) {
-          latestRecords[batchNo] = currentRecord;
-        }
+          timestamp: DateTime.parse(row['timestamp']),
+        ));
       }
     }
 
-    // Update the notifier with the filtered list
-    qcHistoryNotifier.value = latestRecords.values.toList();
+    // Now history contains every single QC action taken
+    qcHistoryNotifier.value = history;
   }
 }

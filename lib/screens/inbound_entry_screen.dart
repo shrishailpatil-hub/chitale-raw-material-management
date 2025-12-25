@@ -117,34 +117,54 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
   }
 
   void _onGeneratePressed() async {
-    // ✅ Check Dropdown
+    // 1. Basic Validation
     if (selectedMaterial == null || _batchController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select Material and enter Batch No'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please select Material and enter Batch No'),
+          backgroundColor: Colors.red));
       return;
     }
 
+    // 2. Parse Quantities
+    // totalQty is in Kg
     double totalQty = double.tryParse(_totalQtyController.text) ?? 0.0;
+
+    // sampleQty is entered in grams (g), we must convert to Kg for the math
+    // formula: grams / 1000 = Kg
+    double sampleQtyGrams = double.tryParse(_sampleQtyController.text) ?? 0.0;
+    double sampleQtyKg = sampleQtyGrams / 1000;
+
+    // 🛑 THE LOGIC CHANGE: Available weight is Total minus Sample
+    double netAvailableQty = totalQty - sampleQtyKg;
+
+    if (netAvailableQty < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Sample weight cannot be more than Total weight!'),
+          backgroundColor: Colors.red));
+      return;
+    }
+
     final randomId = Random().nextInt(9000) + 1000;
     final generatedGRN = 'GRN-2025-$randomId';
 
     final newBatch = Batch(
-      material: selectedMaterial!, // ✅ Uses Standard Name
+      material: selectedMaterial!,
       batchNo: _batchController.text,
       vendor: _vendorController.text,
       grn: generatedGRN,
       regDate: _dateController.text.isEmpty ? 'Today' : _dateController.text,
       mfgDate: _mfgDateController.text,
       expDate: _expDateController.text,
-      sampleQty: _sampleQtyController.text.isEmpty ? 'N/A' : '${_sampleQtyController.text} g',
-      initialQty: totalQty,
-      currentQty: totalQty,
+      sampleQty: '${_sampleQtyController.text} g', // Store as string for display
+      initialQty: totalQty,       // Original weight received from vendor
+      currentQty: netAvailableQty, // ✅ Usable weight after sampling
       unit: 'Kg',
     );
 
-    // ✅ CRITICAL FIX: Add "Inbound Manager" and "isIssued" before saving
+    // Prepare map and save
     final batchMap = newBatch.toMap();
-    batchMap['inboundManager'] = widget.currentUser.name; // Save who created it
-    batchMap['isIssued'] = 0; // Default: Not Issued (0)
+    batchMap['inboundManager'] = widget.currentUser.name;
+    batchMap['isIssued'] = 0;
 
     await DatabaseHelper.instance.insertBatch(batchMap);
 
@@ -153,7 +173,8 @@ class _InboundEntryScreenState extends State<InboundEntryScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text("Success!"),
-          content: Text("Batch Saved Successfully.\nGRN: $generatedGRN"),
+          content: Text(
+              "GRN Generated: $generatedGRN\n\nTotal: $totalQty Kg\nSample: $sampleQtyGrams g\nAvailable for Production: ${netAvailableQty.toStringAsFixed(2)} Kg"),
           actions: [
             ElevatedButton(
               onPressed: () {

@@ -42,7 +42,7 @@ class _LoginUIState extends State<LoginUI> {
           children: [
             // Logo
             Positioned(
-              left: 120,
+              left: 100,
               top: 200,
               child: Container(
                 width: 200,
@@ -140,7 +140,7 @@ class _LoginUIState extends State<LoginUI> {
     if (user != null) {
       if (user.role == 'SUPER_ADMIN') {
         // Omkar
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SuperAdminDashboard()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SuperAdminDashboard(currentUser: user)));
       } else if (user.role == 'INBOUND') {
         // Arun or Vijay (Pass the user object!)
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminDashboard(currentUser: user)));

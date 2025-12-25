@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/database_helper.dart';
-import '../models/user.dart'; // ✅ Added Import
+import '../models/user.dart';
 import 'inbound_entry_screen.dart';
 import 'shelf_assign_screen.dart';
 import 'issue_material_screen.dart';
 import 'loginpage.dart';
 
 class AdminDashboard extends StatefulWidget {
-  final User? currentUser; // ✅ Accept User
+  final User? currentUser;
   const AdminDashboard({super.key, this.currentUser});
 
   @override
@@ -44,8 +44,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
+        elevation: 0,
         backgroundColor: const Color(0xFF1C4175),
-        title: const Text('Inbound Manager', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('Inventory Control', style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadStats)
         ],
@@ -54,95 +56,124 @@ class _AdminDashboardState extends State<AdminDashboard> {
         onRefresh: () async => _loadStats(),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---------------- WELCOME ----------------
-              Text(
-                "Welcome,\n${widget.currentUser?.name ?? 'Manager'}", // ✅ Dynamic Name
-                style: const TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 20),
-
-              // ---------------- LIVE STATS ----------------
-              const Text("Warehouse Overview", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-
-              Row(
+              // --- PREMIUM FLOATING HEADER ---
+              Stack(
                 children: [
-                  _statCard("Pending Put-away", stats['putAway'].toString(), Colors.orange, Icons.shelves),
-                  const SizedBox(width: 12),
-                  _statCard("Low Stock Alerts", stats['lowStock'].toString(), Colors.red, Icons.warning_amber),
+                  Container(
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1C4175),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5)),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 25,
+                            backgroundColor: const Color(0xFF1C4175),
+                            child: Text(
+                              widget.currentUser?.name.substring(0, 1).toUpperCase() ?? "M",
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Inbound Manager", style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                              Text(
+                                widget.currentUser?.name ?? "Manager",
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.warehouse, color: Color(0xFF1C4175), size: 28),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _statCard("Pending QC", stats['pendingQC'].toString(), Colors.blue, Icons.science),
-                  const SizedBox(width: 12),
-                  _statCard("Total Batches", stats['total'].toString(), Colors.green, Icons.inventory_2),
-                ],
-              ),
 
-              const SizedBox(height: 30),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- LIVE STATS ---
+                    const Text("Warehouse Overview", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _statCard("Pending Put-away", stats['putAway'].toString(), Colors.orange, Icons.shelves),
+                        const SizedBox(width: 12),
+                        _statCard("Low Stock Alerts", stats['lowStock'].toString(), Colors.red, Icons.warning_amber),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _statCard("Pending QC", stats['pendingQC'].toString(), Colors.blue, Icons.science),
+                        const SizedBox(width: 12),
+                        _statCard("Total Batches", stats['total'].toString(), Colors.green, Icons.inventory_2),
+                      ],
+                    ),
 
-              // ---------------- ACTIONS ----------------
-              const Text("Quick Actions", style: TextStyle(fontSize: 18, color: Colors.black,fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+                    const SizedBox(height: 30),
 
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.1,
-                children: [
-                  _actionCard(
-                    icon: Icons.add_box,
-                    label: "Inbound Entry",
-                    textColor: const Color(0xFF1C4175),
-                    onTap: () => _navigate(InboundEntryScreen(currentUser: widget.currentUser!)),
-                  ),
-                  _actionCard(
-                    icon: Icons.move_to_inbox,
-                    label: "Shelf Assign",
-                    textColor: const Color(0xFF1C4175),
-                    onTap: () => _navigate(const ShelfAssignScreen()),
-                  ),
-                  _actionCard(
-                    icon: Icons.outbox,
-                    label: "Issue Material",
-                    onTap: () => _navigate(const IssueMaterialScreen()),
-                  ),
-                  _actionCard(
-                    icon: Icons.logout,
-                    label: "Logout",
-                    textColor: Colors.red,
-                    onTap: () async {
-                      final shouldLogout = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text("Logout"),
-                          content: const Text("Are you sure?"),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
-                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Logout", style: TextStyle(color: Colors.red))),
-                          ],
+                    // --- ACTIONS ---
+                    const Text("Quick Actions", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 1.1,
+                      children: [
+                        _actionCard(
+                          icon: Icons.add_box,
+                          label: "Inbound Entry",
+                          onTap: () => _navigate(InboundEntryScreen(currentUser: widget.currentUser!)),
                         ),
-                      );
-                      if (shouldLogout == true) {
-                        if (!context.mounted) return;
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
-                              (route) => false,
-                        );
-                      }
-                    },
-                  ),
-                ],
+                        _actionCard(
+                          icon: Icons.move_to_inbox,
+                          label: "Shelf Assign",
+                          onTap: () => _navigate(const ShelfAssignScreen()),
+                        ),
+                        _actionCard(
+                          icon: Icons.outbox,
+                          label: "Issue Material",
+                          onTap: () => _navigate(const IssueMaterialScreen()),
+                        ),
+                        _actionCard(
+                          icon: Icons.logout,
+                          label: "Logout",
+                          textColor: Colors.red,
+                          onTap: () => _handleLogout(context),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -156,6 +187,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _loadStats();
   }
 
+  void _handleLogout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Are you sure?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Logout", style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (shouldLogout == true) {
+      if (!context.mounted) return;
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
+    }
+  }
+
   Widget _statCard(String label, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
@@ -163,9 +212,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
           boxShadow: [
-            BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -179,7 +227,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ],
             ),
             const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black54)),
+            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black54)),
           ],
         ),
       ),
@@ -194,7 +242,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [BoxShadow(color: Color(0x1F000000), blurRadius: 8, offset: Offset(2, 2))],
+          boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 10, offset: Offset(0, 4))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

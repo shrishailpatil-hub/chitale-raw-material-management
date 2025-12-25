@@ -2,18 +2,29 @@ import 'package:flutter/material.dart';
 import 'traceability_screen.dart';
 import 'loginpage.dart';
 import 'audit_log_screen.dart';
-import 'analytics_screen.dart'; // ✅ Import Analytics Screen
+import 'analytics_screen.dart';
+import '../models/user.dart'; // Ensure this model exists
 
 class SuperAdminDashboard extends StatelessWidget {
-  const SuperAdminDashboard({super.key});
+  final User currentUser; // Accepts the logged-in user object
+
+  const SuperAdminDashboard({super.key, required this.currentUser});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Light Grey Background
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.black, // Distinctive "Boss Mode" color
-        title: const Text('Director Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        elevation: 0,
+        backgroundColor: Colors.black,
+        title: const Text(
+          'EXECUTIVE PANEL',
+          style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -22,74 +33,125 @@ class SuperAdminDashboard extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Welcome",
-              style: TextStyle(fontSize: 24, color: Colors.black, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              "System Overview & Audit",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 30),
-
-            // ---------------- ANALYTICS BUTTON (PHASE 3 INTEGRATED) ----------------
-            GestureDetector(
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AnalyticsScreen()));
-              },
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFF1C4175), Color(0xFF2E7CCC)]),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [BoxShadow(color: Color(0x3F000000), blurRadius: 8, offset: Offset(0, 4))],
+            // --- PREMIUM EXECUTIVE HEADER ---
+            Stack(
+              children: [
+                Container(
+                  height: 100,
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
+                  ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Business Intelligence", style: TextStyle(color: Colors.white70)),
-                        Text("View Analytics", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
                       ],
                     ),
-                    Icon(Icons.bar_chart, color: Colors.white, size: 40),
-                  ],
+                    child: Row(
+                      children: [
+                        // Dynamic Profile Initials Circle
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: const Color(0xFF1C4175),
+                          child: Text(
+                            currentUser.name.isNotEmpty
+                                ? currentUser.name.substring(0, 1).toUpperCase()
+                                : "A",
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Welcome back,",
+                              style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500
+                              ),
+                            ),
+                            Text(
+                              currentUser.name,
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.verified, color: Colors.blue, size: 28),
+                      ],
+                    ),
+                  ),
                 ),
+              ],
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Operational Insights",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // --- BUSINESS INTELLIGENCE CARD ---
+                  _buildAnalyticsCard(context),
+
+                  const SizedBox(height: 30),
+                  const Text(
+                    "Compliance & Audit",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // --- AUDIT TOOLS ---
+                  _adminCard(
+                    context,
+                    title: "Traceability Review",
+                    subtitle: "Full genealogy of finished goods",
+                    icon: Icons.account_tree_rounded,
+                    color: Colors.deepPurple,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TraceabilityScreen())),
+                  ),
+                  const SizedBox(height: 15),
+                  _adminCard(
+                    context,
+                    title: "Override Audit",
+                    subtitle: "Monitor management bypasses",
+                    icon: Icons.gavel_rounded,
+                    color: Colors.orange.shade800,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AuditLogScreen())),
+                  ),
+                ],
               ),
-            ),
-
-            const SizedBox(height: 30),
-            const Text("Audit Tools", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-
-            // ---------------- TRACEABILITY BUTTON ----------------
-            _adminCard(
-              context,
-              title: "Traceability Review",
-              subtitle: "Track Finished Goods -> Raw Material",
-              icon: Icons.history_edu,
-              color: Colors.purple,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TraceabilityScreen())),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ---------------- OVERRIDE LOGS BUTTON ----------------
-            _adminCard(
-              context,
-              title: "Override Logs",
-              subtitle: "View authorized logic bypasses",
-              icon: Icons.security,
-              color: Colors.orange,
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AuditLogScreen()));
-              },
             ),
           ],
         ),
@@ -97,22 +159,77 @@ class SuperAdminDashboard extends StatelessWidget {
     );
   }
 
-  Widget _adminCard(BuildContext context, {required String title, required String subtitle, required IconData icon, required Color color, required VoidCallback onTap}) {
+  // --- STYLIZED ANALYTICS CARD ---
+  Widget _buildAnalyticsCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnalyticsScreen())),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1C4175).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+          child: ListTile(
+            leading: Icon(Icons.analytics_rounded, color: Colors.white, size: 40),
+            title: Text(
+              "Business Intelligence",
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              "Live Inventory & Production Trends",
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            trailing: Icon(Icons.chevron_right, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- STANDARD TOOL CARD ---
+  Widget _adminCard(BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap
+  }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [BoxShadow(color: Color(0x1F000000), blurRadius: 5, offset: Offset(0, 2))],
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x0D000000),
+                blurRadius: 10,
+                offset: Offset(0, 4)
+            )
+          ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle
+              ),
               child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(width: 16),
@@ -120,12 +237,22 @@ class SuperAdminDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 18, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
-                  Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                  Text(
+                      title,
+                      style: const TextStyle(
+                          fontSize: 17,
+                          color: Color(0xFF263238),
+                          fontWeight: FontWeight.bold
+                      )
+                  ),
+                  Text(
+                      subtitle,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
           ],
         ),
       ),
@@ -133,6 +260,10 @@ class SuperAdminDashboard extends StatelessWidget {
   }
 
   void _logout(BuildContext context) {
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false
+    );
   }
 }
